@@ -4,82 +4,50 @@ import { getStoryNarration } from '../utils/narration';
 
 const STORY_SLIDES = [
   {
-    visual: <div style={{fontSize: '5rem', display: 'flex', gap: '10px'}}>🍢🍢🍢🍢🍢🍢🍢🍢🍢</div>,
+    image: '/images/story_hawker.png',
     title: 'At the Hawker Centre',
     text: 'Wei Ming is at the hawker centre. He has 9 fishballs!',
     highlight: 'Yummy fishballs!',
     mascotText: 'He has 9 fishballs! 😋',
   },
   {
-    visual: <div style={{fontSize: '5rem', display: 'flex', gap: '10px'}}>🍢🍢🍢🍢🍢<span style={{opacity: 0.2}}>🍢🍢🍢🍢</span></div>,
+    image: '/images/story_eating.png',
     title: 'Taking Away!',
     text: 'He eats 4 fishballs. Yum, yum, yum!',
     highlight: 'Crunch, crunch!',
     mascotText: 'Subtract means take away! ➖',
   },
   {
-    visual: <div style={{fontSize: '6rem'}}>🤔</div>,
+    image: '/images/story_question.png',
     title: 'The Question',
     text: 'How many fishballs does Wei Ming have left?',
     highlight: '"How many are left?"',
     mascotText: "Let's find out! 🔍",
   },
   {
-    visual: (
-      <svg viewBox="0 0 220 160" style={{ width: '100%', height: '100%', padding: '20px' }}>
-        <circle cx="110" cy="32" r="28" fill="#4A90D9" />
-        <text x="110" y="40" fill="white" fontSize="20" textAnchor="middle" fontWeight="bold">9</text>
-        <line x1="82" y1="60" x2="62" y2="95" stroke="#4A90D9" strokeWidth="4" />
-        <line x1="138" y1="60" x2="158" y2="95" stroke="#4A90D9" strokeWidth="4" />
-        <circle cx="50" cy="118" r="24" fill="#FF8A50" />
-        <text x="50" y="126" fill="white" fontSize="20" textAnchor="middle" fontWeight="bold">4</text>
-        <circle cx="170" cy="118" r="24" fill="#FFF9C4" stroke="#FFB300" strokeWidth="2" strokeDasharray="6,3" />
-        <text x="170" y="126" fill="#FFB300" fontSize="24" textAnchor="middle" fontWeight="bold">?</text>
-      </svg>
-    ),
+    image: '/images/story_numberbond.png',
     title: 'The Number Bond',
     text: 'What do we know? The whole is 9. One part is 4.',
     highlight: 'Whole and Parts!',
     mascotText: 'We know the whole! 🧩',
   },
   {
-    visual: (
-      <svg viewBox="0 0 220 160" style={{ width: '100%', height: '100%', padding: '20px' }}>
-        <circle cx="110" cy="32" r="28" fill="#4A90D9" />
-        <text x="110" y="40" fill="white" fontSize="20" textAnchor="middle" fontWeight="bold">9</text>
-        <line x1="82" y1="60" x2="62" y2="95" stroke="#4A90D9" strokeWidth="4" />
-        <line x1="138" y1="60" x2="158" y2="95" stroke="#4A90D9" strokeWidth="4" />
-        <circle cx="50" cy="118" r="24" fill="#FF8A50" />
-        <text x="50" y="126" fill="white" fontSize="20" textAnchor="middle" fontWeight="bold">4</text>
-        <circle cx="170" cy="118" r="24" fill="#FF8A50" />
-        <text x="170" y="126" fill="white" fontSize="20" textAnchor="middle" fontWeight="bold">5</text>
-      </svg>
-    ),
+    image: '/images/story_answer.png',
     title: 'Finding the Missing Part',
     text: 'We need to find the other part. This is what is left!',
     highlight: '9 – 4 = 5',
     mascotText: 'The missing part is 5! 💡',
   },
   {
-    visual: (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-        <svg viewBox="0 0 300 80" style={{ width: '100%', height: '120px' }}>
-          <rect x="20" y="10" width="260" height="30" fill="#4A90D9" rx="4" />
-          <text x="150" y="32" fill="white" fontSize="16" textAnchor="middle" fontWeight="bold">Whole = 9</text>
-          <rect x="20" y="45" width="115" height="30" fill="#FF8A50" rx="4" />
-          <text x="77.5" y="66" fill="white" fontSize="16" textAnchor="middle" fontWeight="bold">4</text>
-          <rect x="140" y="45" width="140" height="30" fill="#FF8A50" rx="4" />
-          <text x="210" y="66" fill="white" fontSize="16" textAnchor="middle" fontWeight="bold">5</text>
-        </svg>
-      </div>
-    ),
+    image: '/images/story_barmodel.png',
     title: 'The Bar Model',
     text: 'Draw the number bond. Put 9 at the top. Put 4 in one circle. Now write the number sentence. 9 minus 4 equals 5.',
     highlight: 'Number bonds help us solve!',
     mascotText: 'Bar models are cool! 📊',
   },
   {
-    visual: <div style={{fontSize: '3rem', fontWeight: 'bold', color: '#4A90D9', padding: '20px', textAlign: 'center'}}>Wei Ming has 5 fishballs left.</div>,
+    // No generated image for this one — use inline celebration visual
+    image: null,
     title: 'The Answer',
     text: 'Wei Ming has 5 fishballs left!',
     highlight: 'You solved it!',
@@ -144,8 +112,19 @@ export default function StoryPhase({ onComplete, audioEnabled }) {
         <span className="story-progress-label">{slide + 1} / {STORY_SLIDES.length}</span>
       </div>
       <div className={`story-card ${anim ? 'flipping' : ''}`}>
-        <div className="story-image-section" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e3f2fd', minHeight: '200px'}}>
-          {s.visual}
+        <div className="story-image-section">
+          {s.image ? (
+            <>
+              <img src={s.image} alt={s.title} className="story-image" />
+              <div className="story-image-overlay" />
+            </>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%)', minHeight: '200px', padding: '20px' }}>
+              <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#4A90D9', textAlign: 'center' }}>
+                🎉 Wei Ming has 5 fishballs left! 🎉
+              </div>
+            </div>
+          )}
         </div>
         <div className="story-text-section">
           <h2 className="story-title">{s.title}</h2>
