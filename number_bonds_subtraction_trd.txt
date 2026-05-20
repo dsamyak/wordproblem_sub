@@ -1,0 +1,749 @@
+Technical Requirements Document (TRD)
+Number Bonds for Subtraction — Grade 1 Math
+Intellia SG | Singapore Primary Mathematics Curriculum (MOE)
+
+═══════════════════════════════════════════════════════════════
+
+1. TECHNICAL OVERVIEW
+
+This document specifies the architecture, component design, state management, data models, simulation logic, gamification implementation, and quality standards for the "Number Bonds for Subtraction" interactive lesson module (Lesson 3.2) within Intellia SG's Grade 1 Math program.
+
+The module is a React 18 application (Vite + JSX), structured identically to the reference repository https://github.com/dsamyak/readingnumbers, and styled to match https://readingnumbers.vercel.app/. It will be embedded in WordPress at:
+https://intelliasg.com/courses/grade-1-math/lessons/number-bonds-for-subtraction/
+
+═══════════════════════════════════════════════════════════════
+
+2. TECHNOLOGY STACK
+
+Layer               | Technology                | Rationale
+--------------------|---------------------------|------------------------------------------
+UI Framework        | React 18 (JSX, Vite)      | Matches readingnumbers repo structure
+State Management    | useState + useReducer     | Sufficient for single-module complexity
+Styling             | CSS Modules + Tailwind    | Matches existing repo CSS approach
+Icons               | Lucide React              | Available in artifact environment
+Animation           | CSS keyframes + transitions| No external dependency needed
+SVG Diagrams        | Inline SVG (React)        | For number bond diagrams
+Persistence         | localStorage              | Session state, no backend needed
+Audio               | Web Speech API            | Browser-native, en-SG locale
+Math                | Vanilla JS                | No library needed
+Build Tool          | Vite                      | Matches repo (vite.config.js present)
+
+═══════════════════════════════════════════════════════════════
+
+3. PROJECT STRUCTURE (mirrors readingnumbers repo)
+
+number-bonds-subtraction/
+├── public/
+│   └── images/                  # Static assets (counters, mascot, backgrounds)
+│       ├── mascot-idle.svg
+│       ├── mascot-happy.svg
+│       ├── mascot-thinking.svg
+│       ├── mascot-celebrate.svg
+│       ├── counter-star.svg
+│       ├── counter-apple.svg
+│       └── world-map-bg.svg
+├── src/
+│   ├── main.jsx                 # React entry point
+│   ├── App.jsx                  # Root component, global state
+│   ├── App.css                  # Global styles (matches readingnumbers CSS)
+│   ├── components/
+│   │   ├── IntroScreen.jsx      # Welcome + lesson overview
+│   │   ├── ProgressMap.jsx      # 5-phase dot tracker (top bar)
+│   │   ├── phases/
+│   │   │   ├── WonderPhase.jsx  # Phase 1: Hook animation
+│   │   │   ├── StoryPhase.jsx   # Phase 2: Narrative panels
+│   │   │   ├── SimulatePhase.jsx# Phase 3: Simulation wrapper
+│   │   │   ├── PlayPhase.jsx    # Phase 4: IntelliPlay™ quiz
+│   │   │   └── ReflectPhase.jsx # Phase 5: Journal / AI prompt
+│   │   ├── simulations/
+│   │   │   ├── CounterStation.jsx    # Station A: drag take-away
+│   │   │   ├── NumberBondStation.jsx # Station B: bond diagram builder
+│   │   │   └── SentenceStation.jsx   # Station C: abstract sentence
+│   │   ├── quiz/
+│   │   │   ├── QuestionRenderer.jsx  # Polymorphic question dispatcher
+│   │   │   ├── NumberBondQ.jsx       # Q1: bond diagram question
+│   │   │   ├── FillBlankQ.jsx        # Q2: fill subtraction blank
+│   │   │   ├── PictureQ.jsx          # Q3: picture take-away
+│   │   │   ├── WordProblemQ.jsx      # Q4: Singapore word problem
+│   │   │   ├── FactFamilyQ.jsx       # Q5: fact family
+│   │   │   ├── TrueFalseQ.jsx        # Q6: true/false
+│   │   │   ├── MatchBondQ.jsx        # Q7: match bond diagram
+│   │   │   ├── FindWholeQ.jsx        # Q10: reverse — find whole
+│   │   │   └── HintOverlay.jsx       # Hint 1 & 2 + explanation
+│   │   ├── gamification/
+│   │   │   ├── XPTracker.jsx         # XP bar + score display
+│   │   │   ├── StarRating.jsx        # 1–3 stars per world
+│   │   │   ├── BadgePanel.jsx        # Badge unlock display
+│   │   │   ├── StreakCounter.jsx     # Fire streak counter
+│   │   │   └── WorldMap.jsx          # 10-world progress map
+│   │   ├── shared/
+│   │   │   ├── Mascot.jsx            # LearnFlow AI robot mascot
+│   │   │   ├── NumberBondDiagram.jsx # Reusable SVG bond diagram
+│   │   │   ├── TenFrame.jsx          # Ten-frame visual component
+│   │   │   ├── CounterGrid.jsx       # Draggable counter grid
+│   │   │   ├── NumberPad.jsx         # Large tap-friendly number input
+│   │   │   └── FeedbackOverlay.jsx   # Correct / incorrect modal
+│   ├── data/
+│   │   ├── questionBank.js      # All 100 question objects
+│   │   └── storyContent.js      # Story phase panel data
+│   ├── hooks/
+│   │   ├── useAudio.js          # Web Speech API hook
+│   │   ├── useGameState.js      # Gamification state hook
+│   │   └── useLocalStorage.js   # Persistence hook
+│   └── utils/
+│       ├── shuffle.js           # Fisher-Yates randomisation
+│       ├── scoring.js           # XP and star calculation
+│       └── badgeEngine.js       # Badge unlock logic
+├── index.html
+├── package.json
+├── vite.config.js
+└── .gitignore
+
+═══════════════════════════════════════════════════════════════
+
+4. APPLICATION STATE ARCHITECTURE
+
+4.1 Global State (App.jsx — useReducer)
+
+const initialState = {
+  // Navigation
+  phase: 'intro',            // 'intro' | 'wonder' | 'story' | 'simulate' | 'play' | 'reflect' | 'results'
+  currentSimStation: 0,      // 0=CounterTakeAway, 1=BondBuilder, 2=SentenceFill
+  simStationsComplete: [false, false, false],
+
+  // Play / Challenge phase
+  questionSet: [],           // 100 shuffled question objects
+  currentQuestion: 0,        // 0–99
+  currentWorld: 0,           // 0–9 (10 worlds × 10 questions)
+  worldScores: Array(10).fill(null), // Score per world (0–10)
+  hintsUsed: 0,
+  attemptCount: 0,           // Attempts on current question
+
+  // Gamification
+  xp: 0,
+  totalStars: 0,
+  streak: 0,
+  maxStreak: 0,
+  badges: [],                // Array of unlocked badge IDs
+
+  // Session metadata
+  phaseComplete: {
+    wonder: false, story: false, simulate: false,
+    play: false, reflect: false
+  },
+  sessionId: crypto.randomUUID(),
+
+  // Settings
+  audioEnabled: true,
+  musicEnabled: false,
+};
+
+4.2 Reducer Actions
+
+const ACTIONS = {
+  SET_PHASE: 'SET_PHASE',
+  ADVANCE_SIM_STATION: 'ADVANCE_SIM_STATION',
+  COMPLETE_SIM_STATION: 'COMPLETE_SIM_STATION',
+  LOAD_QUESTIONS: 'LOAD_QUESTIONS',
+  ANSWER_CORRECT: 'ANSWER_CORRECT',
+  ANSWER_INCORRECT: 'ANSWER_INCORRECT',
+  USE_HINT: 'USE_HINT',
+  NEXT_QUESTION: 'NEXT_QUESTION',
+  UNLOCK_BADGE: 'UNLOCK_BADGE',
+  COMPLETE_PHASE: 'COMPLETE_PHASE',
+  TOGGLE_AUDIO: 'TOGGLE_AUDIO',
+  RESTORE_SESSION: 'RESTORE_SESSION',
+};
+
+═══════════════════════════════════════════════════════════════
+
+5. QUESTION DATA MODEL
+
+5.1 Question Schema (TypeScript-style)
+
+interface Question {
+  id: string;                  // e.g. "Q1_007", "Q4_015"
+  type: QuestionType;          // Enum (10 types — see §7.1 of PRD)
+  world: number;               // 0–9 (which world it belongs to)
+  difficulty: 1 | 2 | 3;      // 1=easy(≤10), 2=medium(≤15), 3=hard(≤20)
+  whole: number;               // The minuend (total / whole in bond)
+  part1: number;               // Known subtrahend
+  part2: number;               // Difference (the answer)
+  missingSlot: 'whole' | 'part1' | 'part2'; // What is hidden
+
+  // Rendering
+  questionText: string;        // Full question text
+  visual: 'bond' | 'counters' | 'picture' | 'sentence' | 'trueFalse';
+  counterEmoji?: string;       // '🍎' | '⭐' | '🍪' | '🎈' etc.
+  options?: (string|number)[]; // MCQ: always 4 options
+
+  // Hints
+  hint1: string;               // Highlight bond diagram
+  hint2: string;               // Show counter animation
+  explanation: string;         // Full explanation after 2 fails
+
+  // Singapore context (word problems only)
+  characterName?: string;      // 'Wei Ming', 'Priya' etc.
+  objectName?: string;         // 'stickers', 'cookies' etc.
+
+  // Answer
+  correctAnswer: number | string;
+}
+
+type QuestionType =
+  | 'bond_diagram'          // Q1: Number bond with missing part
+  | 'fill_blank'            // Q2: ___ – ___ = ___
+  | 'picture_takeaway'      // Q3: Emoji counters, some crossed
+  | 'word_problem'          // Q4: Singapore narrative
+  | 'fact_family'           // Q5: Complete the bond family
+  | 'true_false'            // Q6: Is this bond correct?
+  | 'match_bond'            // Q7: Which bond matches the sentence?
+  | 'number_before_after'   // Q8: Find the whole from parts
+  | 'within_20'             // Q9: Double-digit subtraction
+  | 'find_whole';           // Q10: Reverse — what is the whole?
+
+5.2 Sample Question Objects
+
+// Q1 Example — Number bond diagram
+{
+  id: "Q1_001",
+  type: "bond_diagram",
+  world: 0,
+  difficulty: 1,
+  whole: 9, part1: 4, part2: 5,
+  missingSlot: "part2",
+  questionText: "Look at the number bond. What is the missing part?",
+  visual: "bond",
+  hint1: "The whole is 9. One part is 4.",
+  hint2: "Count 9 counters. Take away 4. How many are left?",
+  explanation: "9 – 4 = 5. The missing part is 5.",
+  options: [3, 4, 5, 6],
+  correctAnswer: 5,
+}
+
+// Q4 Example — Word problem
+{
+  id: "Q4_003",
+  type: "word_problem",
+  world: 1,
+  difficulty: 2,
+  whole: 8, part1: 3, part2: 5,
+  missingSlot: "part2",
+  questionText: "Wei Ming has 8 stickers. He gives 3 to Priya. How many stickers does Wei Ming have left?",
+  visual: "picture",
+  counterEmoji: "🏷️",
+  characterName: "Wei Ming",
+  objectName: "stickers",
+  hint1: "Draw a number bond. Put 8 at the top. Put 3 in one circle.",
+  hint2: "8 take away 3. Count backwards from 8.",
+  explanation: "8 – 3 = 5. Wei Ming has 5 stickers left.",
+  options: [4, 5, 6, 11],
+  correctAnswer: 5,
+}
+
+═══════════════════════════════════════════════════════════════
+
+6. SIMULATION COMPONENT SPECS
+
+6.1 CounterStation.jsx — Station A (Concrete)
+
+State:
+  const [totalCounters, setTotalCounters] = useState(9);   // Whole
+  const [removed, setRemoved] = useState(0);               // Part1
+  const remaining = totalCounters - removed;                // Part2
+
+Interaction:
+  - Each counter is a draggable <div> with drag event handlers
+  - Dragging into the "bin" zone increments removed
+  - Number bond diagram SVG re-renders on every state change
+  - "+/-" button controls for accessibility (non-drag users)
+
+Props: { whole: number, part1: number, onComplete: () => void }
+
+Render:
+  <div class="counter-area">
+    {Array(whole).fill(0).map((_, i) => (
+      <Counter key={i} crossed={i < removed} onDrag={handleDrag} />
+    ))}
+  </div>
+  <NumberBondDiagram whole={whole} part1={removed} part2={remaining} />
+  <p>"{whole} take away {removed} = {remaining}"</p>
+
+6.2 NumberBondStation.jsx — Station B (Pictorial)
+
+State:
+  const [inputValue, setInputValue] = useState('');
+  const [isCorrect, setIsCorrect] = useState(null);
+  const [currentProblem, setProblem] = useState(getNextProblem());
+
+Interaction:
+  - SVG number bond: one circle empty (dashed border), two filled
+  - NumberPad component for touch-friendly input
+  - On submit: check answer → animate fill (correct) or shake (wrong)
+  - 5 problems per station; advance after 4/5 correct
+
+6.3 SentenceStation.jsx — Station C (Abstract)
+
+State:
+  const [answer, setAnswer] = useState('');
+  const [showBondHint, setShowBondHint] = useState(false);
+
+Layout:
+  [  9  ] – [  4  ] = [_____]
+               ↑ tap blank → NumberPad opens
+
+Hint Button: "Show me the number bond 🔢"
+  → Renders NumberBondDiagram below sentence (animated slide-in)
+
+═══════════════════════════════════════════════════════════════
+
+7. SVG NUMBER BOND DIAGRAM COMPONENT
+
+// NumberBondDiagram.jsx — reusable SVG
+const NumberBondDiagram = ({ whole, part1, part2, missing, animated }) => (
+  <svg viewBox="0 0 200 140" xmlns="http://www.w3.org/2000/svg">
+    {/* Whole circle (top) */}
+    <circle cx="100" cy="30" r="28"
+      fill={missing === 'whole' ? '#FFF9C4' : '#4A90D9'}
+      stroke="#2E6DB4" strokeWidth="3" />
+    <text x="100" y="35" textAnchor="middle"
+      fill={missing === 'whole' ? '#999' : '#FFF'}
+      fontSize="20" fontWeight="bold">
+      {missing === 'whole' ? '?' : whole}
+    </text>
+
+    {/* Left branch line */}
+    <line x1="72" y1="58" x2="55" y2="90"
+      stroke="#888" strokeWidth="2.5" />
+    {/* Right branch line */}
+    <line x1="128" y1="58" x2="145" y2="90"
+      stroke="#888" strokeWidth="2.5" />
+
+    {/* Part 1 circle (bottom-left) */}
+    <circle cx="45" cy="112" r="24"
+      fill={missing === 'part1' ? '#FFF9C4' : '#FF8A50'}
+      stroke={missing === 'part1' ? '#FFB300' : '#E65C00'}
+      strokeWidth="3"
+      strokeDasharray={missing === 'part1' ? '6,3' : '0'} />
+    <text x="45" y="118" textAnchor="middle"
+      fill={missing === 'part1' ? '#999' : '#FFF'}
+      fontSize="18" fontWeight="bold">
+      {missing === 'part1' ? '?' : part1}
+    </text>
+
+    {/* Part 2 circle (bottom-right) */}
+    <circle cx="155" cy="112" r="24"
+      fill={missing === 'part2' ? '#FFF9C4' : '#FF8A50'}
+      stroke={missing === 'part2' ? '#FFB300' : '#E65C00'}
+      strokeWidth="3"
+      strokeDasharray={missing === 'part2' ? '6,3' : '0'} />
+    <text x="155" y="118" textAnchor="middle"
+      fill={missing === 'part2' ? '#999' : '#FFF'}
+      fontSize="18" fontWeight="bold">
+      {missing === 'part2' ? '?' : part2}
+    </text>
+  </svg>
+);
+
+Animated fill variant: CSS transition on circle fill (0.3s ease)
+Shake variant: CSS keyframe 'shake' applied on wrong answer
+Bounce variant: CSS keyframe 'bounceIn' on correct answer
+
+═══════════════════════════════════════════════════════════════
+
+8. RANDOMISATION ENGINE
+
+8.1 Fisher-Yates Shuffle
+
+// utils/shuffle.js
+export function shuffleArray(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+export function generateSessionQuestions(bank) {
+  // Ensure distribution: pick 10 from each type, then shuffle
+  const byType = {};
+  bank.forEach(q => {
+    if (!byType[q.type]) byType[q.type] = [];
+    byType[q.type].push(q);
+  });
+  const selected = Object.values(byType).flatMap(qs => shuffleArray(qs).slice(0, 10));
+  return shuffleArray(selected); // Final shuffle of all 100
+}
+
+8.2 MCQ Distractor Generation
+
+// utils/scoring.js
+export function generateDistractors(correct, min = 0, max = 20, count = 3) {
+  const distractors = new Set();
+  let attempts = 0;
+  while (distractors.size < count && attempts < 50) {
+    const offset = (Math.random() > 0.5 ? 1 : -1) * (Math.ceil(Math.random() * 3));
+    const d = correct + offset;
+    if (d >= min && d <= max && d !== correct) distractors.add(d);
+    attempts++;
+  }
+  // Fallback distractors if not enough found
+  [correct-1, correct+1, correct+2].forEach(d => {
+    if (d >= min && d <= max && d !== correct && distractors.size < count)
+      distractors.add(d);
+  });
+  return shuffleArray([correct, ...distractors]);
+}
+
+8.3 Session Seed Persistence
+
+const SESSION_KEY = 'intellia_nb_sub_v1';
+
+// On load: restore if within 24 hours
+const savedSession = JSON.parse(localStorage.getItem(SESSION_KEY));
+if (savedSession && Date.now() - savedSession.timestamp < 86400000) {
+  // Restore state
+}
+
+// On state change: save progress
+localStorage.setItem(SESSION_KEY, JSON.stringify({
+  phase: state.phase,
+  currentQuestion: state.currentQuestion,
+  xp: state.xp,
+  badges: state.badges,
+  worldScores: state.worldScores,
+  timestamp: Date.now(),
+}));
+
+═══════════════════════════════════════════════════════════════
+
+9. GAMIFICATION IMPLEMENTATION
+
+9.1 XP Calculation
+
+// utils/scoring.js
+const XP_TABLE = {
+  correctFirstTry:  10,
+  correctSecondTry:  7,
+  correctWithHint:   5,
+};
+
+export function calcXP(attemptNumber, hintsUsed, streak) {
+  const base = attemptNumber === 1 ? 10 : hintsUsed > 0 ? 5 : 7;
+  const streakBonus = streak >= 5 ? 5 : 0;
+  return base + streakBonus;
+}
+
+9.2 Star Rating (per world / per 10 questions)
+
+export function calcStars(correct, total = 10) {
+  if (correct >= 9) return 3;
+  if (correct >= 7) return 2;
+  if (correct >= 5) return 1;
+  return 0;
+}
+
+// World unlock gate: must have ≥ 1 star (≥ 5/10 correct)
+export function canUnlockWorld(worldScore) {
+  return worldScore !== null && worldScore >= 5;
+}
+
+9.3 Badge Engine
+
+// utils/badgeEngine.js
+export const BADGES = [
+  {
+    id: 'bond_beginner',
+    label: '🏅 Bond Beginner',
+    description: 'Complete Wonder & Story phases',
+    condition: (s) => s.phaseComplete.wonder && s.phaseComplete.story,
+  },
+  {
+    id: 'subtraction_star',
+    label: '🥈 Subtraction Star',
+    description: 'Complete all 3 simulation stations',
+    condition: (s) => s.simStationsComplete.every(Boolean),
+  },
+  {
+    id: 'bond_master',
+    label: '🥇 Bond Master',
+    description: 'Score 80%+ on Play phase',
+    condition: (s) => {
+      const totalCorrect = s.worldScores.reduce((sum, ws) => sum + (ws || 0), 0);
+      return totalCorrect >= 80;
+    },
+  },
+  {
+    id: 'perfect_bond',
+    label: '💎 Perfect Bond',
+    description: 'Score 10/10 in any world',
+    condition: (s) => s.worldScores.some(ws => ws === 10),
+  },
+  {
+    id: 'streak_legend',
+    label: '🔥 Streak Legend',
+    description: 'Achieve a 10-answer streak',
+    condition: (s) => s.maxStreak >= 10,
+  },
+  {
+    id: 'full_journey',
+    label: '🌟 Full Journey',
+    description: 'Complete all 5 phases',
+    condition: (s) => Object.values(s.phaseComplete).every(Boolean),
+  },
+];
+
+export function checkBadges(state) {
+  return BADGES
+    .filter(b => !state.badges.includes(b.id) && b.condition(state))
+    .map(b => b.id);
+}
+
+═══════════════════════════════════════════════════════════════
+
+10. AUDIO IMPLEMENTATION
+
+10.1 Web Speech API Hook
+
+// hooks/useAudio.js
+export function useAudio(audioEnabled) {
+  const speak = (text, options = {}) => {
+    if (!audioEnabled || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate  = options.rate  ?? 0.85;   // Slower for children
+    utterance.pitch = options.pitch ?? 1.1;    // Slightly higher pitch
+    utterance.lang  = options.lang  ?? 'en-SG';// Singapore English
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const speakQuestion = (question) => speak(question.questionText);
+  const speakNumber   = (n) => speak(String(n));
+  const speakPraise   = () => speak(['Amazing!', 'Well done!', 'Brilliant!',
+                                     'You got it!'][Math.floor(Math.random() * 4)]);
+  const speakHint     = (hintText) => speak(hintText, { rate: 0.8 });
+
+  return { speak, speakQuestion, speakNumber, speakPraise, speakHint };
+}
+
+10.2 Sound Effects (Web Audio API)
+
+// hooks/useAudio.js (continued)
+const playTone = (frequencies, durations) => {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  frequencies.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.3, ctx.currentTime + (durations[i - 1] || 0) / 1000);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (durations[i] || 200) / 1000 + 0.5);
+    osc.start(ctx.currentTime + (durations[i - 1] || 0) / 1000);
+    osc.stop(ctx.currentTime + (durations[i] || 200) / 1000 + 0.5);
+  });
+};
+
+const SOUND_EFFECTS = {
+  correct:  () => playTone([880, 1100], [150, 150]),
+  wrong:    () => playTone([220], [300]),
+  badge:    () => playTone([523, 659, 784, 1047], [100, 100, 100, 200]),
+  streak:   () => playTone([440, 880], [100, 200]),
+  levelUp:  () => playTone([523, 659, 784, 1047, 1319], [80, 80, 80, 80, 300]),
+};
+
+═══════════════════════════════════════════════════════════════
+
+11. CSS ANIMATION KEYFRAMES (matching readingnumbers.vercel.app style)
+
+@keyframes bounceIn {
+  0%   { transform: scale(0.3); opacity: 0; }
+  50%  { transform: scale(1.05); opacity: 1; }
+  70%  { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-8px); }
+  40%       { transform: translateX(8px); }
+  60%       { transform: translateX(-6px); }
+  80%       { transform: translateX(6px); }
+}
+
+@keyframes floatUp {
+  0%   { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-60px) scale(1.5); opacity: 0; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74, 144, 217, 0.4); }
+  50%       { box-shadow: 0 0 0 12px rgba(74, 144, 217, 0); }
+}
+
+@keyframes celebrate {
+  0%   { transform: rotate(-5deg) scale(1); }
+  25%  { transform: rotate(5deg) scale(1.1); }
+  50%  { transform: rotate(-3deg) scale(1.05); }
+  75%  { transform: rotate(3deg) scale(1.1); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+@keyframes slideInUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes dashFill {
+  from { stroke-dashoffset: 100; }
+  to   { stroke-dashoffset: 0; }
+}
+
+═══════════════════════════════════════════════════════════════
+
+12. COMPONENT PROP CONTRACTS (Key Components)
+
+NumberBondDiagram
+  Props: { whole, part1, part2, missing, animated?, size?, theme? }
+  Returns: SVG element
+
+TenFrame
+  Props: { filled, max?, interactive?, onToggle? }
+  Returns: 2×5 grid div
+
+CounterGrid
+  Props: { total, removed, onRemove, emoji? }
+  Returns: Draggable/tappable counter area
+
+NumberPad
+  Props: { max, value, onChange, onSubmit }
+  Returns: 0–max button grid (min 44×44px per button)
+
+Mascot
+  Props: { mood: 'idle'|'happy'|'thinking'|'celebrating' }
+  Returns: SVG/img with CSS animation class
+
+QuestionRenderer
+  Props: { question: Question, onAnswer: (answer) => void }
+  Returns: Type-specific question component
+
+FeedbackOverlay
+  Props: { isCorrect, explanation?, onContinue }
+  Returns: Modal overlay with animation
+
+WorldMap
+  Props: { worldScores, currentWorld, onSelectWorld }
+  Returns: Scrollable horizontal world list
+
+═══════════════════════════════════════════════════════════════
+
+13. PERFORMANCE REQUIREMENTS
+
+Metric                  | Target
+------------------------|------------------
+Initial load time       | < 2 seconds
+Time to first interaction | < 1 second
+SVG animation frame rate | 60fps
+Memory usage            | < 60MB
+Bundle size (gzipped)   | < 600KB
+Lighthouse Performance  | ≥ 90
+Lighthouse Accessibility| ≥ 90
+
+═══════════════════════════════════════════════════════════════
+
+14. BROWSER & DEVICE SUPPORT
+
+Environment          | Support Level
+---------------------|----------------
+Chrome 110+          | Full
+Safari 15+ (iPad)    | Full
+Firefox 110+         | Full
+Edge 110+            | Full
+Android Chrome       | Full
+iOS Safari 15+       | Full
+IE 11                | Not supported
+
+Primary Test Device: iPad (768px, touch) — classroom context
+Secondary: Desktop Chrome (1280px+)
+Tertiary: iPhone (375px)
+
+═══════════════════════════════════════════════════════════════
+
+15. WORDPRESS EMBEDDING (Intellia SG)
+
+Option A — React CDN Bundle (preferred)
+  <!-- In WordPress Custom HTML block -->
+  <div id="nb-subtraction-app"></div>
+  <script src="https://cdn.intelliasg.com/lessons/nb-subtraction.js"></script>
+
+Option B — iframe Embed
+  <iframe
+    src="https://lessons.intelliasg.com/grade1/number-bonds-subtraction"
+    width="100%"
+    height="760px"
+    frameborder="0"
+    allow="autoplay; microphone"
+    style="border-radius: 12px;"
+  ></iframe>
+
+iframe dimensions: 100% width, 760px height (scrollable internally)
+The page must match the lesson page layout at intelliasg.com exactly.
+
+═══════════════════════════════════════════════════════════════
+
+16. QUALITY ASSURANCE CHECKLIST
+
+Category             | Test Case                                         | Status
+---------------------|---------------------------------------------------|-------
+Questions            | All 100 questions render without error            | TBD
+Questions            | MCQ always includes correct answer                | TBD
+Questions            | No duplicate options in any question              | TBD
+Questions            | Randomisation produces unique order each session  | TBD
+Simulations          | Station A: drag take-away works (touch & mouse)   | TBD
+Simulations          | Station B: bond builder updates in real-time      | TBD
+Simulations          | Station C: number pad submits and evaluates       | TBD
+Simulations          | Number bond SVG renders correctly for 0–20        | TBD
+Phases               | All 5 phases navigate end-to-end                  | TBD
+Gamification         | XP increments correctly (all 3 attempt types)     | TBD
+Gamification         | Star rating correct (0,1,2,3 stars)               | TBD
+Gamification         | All 6 badges unlock at correct conditions         | TBD
+Gamification         | Streak counter resets on wrong answer             | TBD
+Gamification         | World unlock gate (≥5/10 required)                | TBD
+Audio                | Web Speech reads question text aloud              | TBD
+Audio                | Sound effects trigger correctly                   | TBD
+Audio                | Graceful fallback when Speech API unavailable     | TBD
+Persistence          | localStorage saves and restores within 24h        | TBD
+Persistence          | "New Game" clears session and re-randomises       | TBD
+Responsive           | Layout correct on 768px tablet                   | TBD
+Responsive           | Layout correct on 375px mobile                   | TBD
+Responsive           | Layout correct on 1280px desktop                 | TBD
+Accessibility        | All tap targets ≥ 44×44px                        | TBD
+Accessibility        | WCAG AA colour contrast on all text               | TBD
+Accessibility        | Keyboard navigation functional                    | TBD
+Performance          | Load time < 2 seconds (Chrome DevTools)           | TBD
+Performance          | Animations run at 60fps                           | TBD
+
+═══════════════════════════════════════════════════════════════
+
+17. DEPLOYMENT PIPELINE
+
+Step | Action
+-----|------------------------------------------------------------
+1    | npm install (Vite + React 18 + dependencies)
+2    | npm run build (Vite production bundle)
+3    | Upload dist/ to CDN or Vercel (preview deploy)
+4    | QA pass on preview URL (full checklist above)
+5    | Embed into WordPress via Option A or B (§15)
+6    | Final QA on intelliasg.com/courses/grade-1-math/lessons/...
+7    | Set lesson status = Live in LearnPress LMS
+
+═══════════════════════════════════════════════════════════════
+
+Document Version: 1.0 | May 2026
+Product: Intellia SG — Grade 1 Math, Lesson 3.2
+Reference Repo: https://github.com/dsamyak/readingnumbers
+Reference UI: https://readingnumbers.vercel.app/
+Technical Lead: Intellia Engineering Team
+Curriculum Reference: Targeting Mathematics Primary 1A/1B (Casco Publications)
+                      Singapore MOE Primary 1 Mathematics Syllabus

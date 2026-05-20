@@ -1,0 +1,1298 @@
+Technical Requirements Document (TRD)
+Word Problems Using Subtraction — Grade 1 Math
+Intellia SG | Singapore Primary Mathematics Curriculum (MOE)
+
+═══════════════════════════════════════════════════════════════
+
+1. TECHNICAL OVERVIEW
+
+This document specifies the architecture, component design, state management, data
+models, simulation logic, gamification implementation, audio pipeline, and quality
+standards for the "Word Problems Using Subtraction" interactive lesson module
+(Lesson 3.4) within Intellia SG's Grade 1 Math program.
+
+The module is a React 18 application (Vite + JSX), structured identically to the
+reference repository https://github.com/dsamyak/numberbound, and styled to exactly
+match https://numberbound.vercel.app/. It will be embedded in WordPress at:
+
+https://intelliasg.com/courses/grade-1-math/lessons/simple-word-problems/
+
+The audio pipeline uses ElevenLabs exclusively (Voice: Alice, Voice ID:
+Xb7hH8MSUJpSbSDYk0k2, Model: eleven_multilingual_v2), following the pre-generation
++ dynamic fallback architecture defined in audio_generation_pipeline.md (the Word
+Problems Using Addition reference module). No Web Speech API fallback is used.
+
+═══════════════════════════════════════════════════════════════
+
+2. TECHNOLOGY STACK
+
+Layer               | Technology                 | Rationale
+--------------------|----------------------------|-----------------------------------------
+UI Framework        | React 18 (JSX, Vite)       | Matches numberbound repo structure exactly
+State Management    | useState + useReducer       | Sufficient for single-module complexity
+Styling             | CSS Modules + CSS Variables | Matches existing repo CSS approach
+Icons               | Lucide React               | Available in artifact environment
+Animation           | CSS keyframes + transitions | No external animation library needed
+SVG Diagrams        | Inline SVG (React)          | Number bond & bar model diagrams
+Drag & Drop         | HTML5 DnD API + touch events| Counter dragging + bond tile placement
+Persistence         | localStorage               | Session state, 24-hour resume
+Audio (Primary)     | ElevenLabs API             | Premium voice narration (Alice)
+Audio (Playback)    | HTML5 Audio API            | new Audio(), preload strategy
+Audio (Cache)       | In-memory Map (elevenLabsCache) | Prevents duplicate API calls
+Audio (Offline Map) | src/utils/audioMap.js      | Auto-generated static asset lookup
+Audio (Scripts)     | scripts/generate_audio.js  | Offline pre-generation
+Audio (Cleanup)     | scripts/clean_audio.js     | Orphan audio file removal
+Math                | Vanilla JS                 | No math library needed
+Build Tool          | Vite                       | Matches repo (vite.config.js present)
+Node.js (scripts)   | Node 18+                   | For offline audio generation scripts
+
+═══════════════════════════════════════════════════════════════
+
+3. PROJECT STRUCTURE (mirrors numberbound repo)
+
+word-problems-subtraction/
+├── public/
+│   ├── assets/
+│   │   └── audio/               # Pre-generated .mp3 files (ElevenLabs)
+│   │       ├── audio_welcome_to_word_problems_..._0.mp3
+│   │       ├── audio_wonderful_you_are_a_..._0.mp3
+│   │       └── [all pre-generated narration files]
+│   └── images/
+│       ├── mascot-idle.svg
+│       ├── mascot-happy.svg
+│       ├── mascot-thinking.svg
+│       ├── mascot-celebrate.svg
+│       ├── mascot-helping.svg
+│       ├── counter-fishball.svg
+│       ├── counter-balloon.svg
+│       ├── counter-star.svg
+│       ├── counter-apple.svg
+│       ├── counter-book.svg
+│       └── world-map-bg.svg
+├── src/
+│   ├── main.jsx                  # React entry point
+│   ├── App.jsx                   # Root component, global state (useReducer)
+│   ├── App.css                   # Global styles (matches numberbound CSS vars)
+│   ├── components/
+│   │   ├── IntroScreen.jsx       # Welcome + mascot greeting + phase map
+│   │   ├── ProgressMap.jsx       # 5-phase dot tracker (top bar)
+│   │   ├── phases/
+│   │   │   ├── WonderPhase.jsx   # Phase 1: Animated hook, mystery problem
+│   │   │   ├── StoryPhase.jsx    # Phase 2: 7-panel narrative
+│   │   │   ├── SimulatePhase.jsx # Phase 3: Simulation wrapper (3 stations)
+│   │   │   ├── PlayPhase.jsx     # Phase 4: IntelliPlay™ quiz engine
+│   │   │   └── ReflectPhase.jsx  # Phase 5: Journal / AI reflection
+│   │   ├── simulations/
+│   │   │   ├── ReadAndShowStation.jsx   # Station A: concrete counters
+│   │   │   ├── DrawTheBondStation.jsx   # Station B: pictorial bond builder
+│   │   │   └── WriteTheSentenceStation.jsx # Station C: abstract sentence fill
+│   │   ├── quiz/
+│   │   │   ├── QuestionRenderer.jsx     # Polymorphic question dispatcher
+│   │   │   ├── WordProblemMCQ.jsx       # Q1: Read problem → MCQ answer
+│   │   │   ├── WordProblemBond.jsx      # Q2: Problem → complete number bond
+│   │   │   ├── WordProblemSentence.jsx  # Q3: Bond shown → write sentence
+│   │   │   ├── AnswerSentenceQ.jsx      # Q4: Fill answer sentence
+│   │   │   ├── PictureWordProblemQ.jsx  # Q5: Picture + story → answer
+│   │   │   ├── FindWholeQ.jsx           # Q6: Reverse — find the whole
+│   │   │   ├── AddOrSubtractQ.jsx       # Q7: Identify operation
+│   │   │   ├── MatchBondQ.jsx           # Q8: Match story to bond diagram
+│   │   │   ├── TrueFalseQ.jsx           # Q9: True/False sentence check
+│   │   │   ├── AnswerWordTileQ.jsx      # Q10: Drag word tiles for answer
+│   │   │   └── HintOverlay.jsx          # 2-level hint + explanation panel
+│   │   ├── gamification/
+│   │   │   ├── XPTracker.jsx       # XP bar + animated increment
+│   │   │   ├── StarRating.jsx      # 1–3 stars per world
+│   │   │   ├── BadgePanel.jsx      # Badge unlock modal
+│   │   │   ├── StreakCounter.jsx   # Fire streak counter
+│   │   │   └── WorldMap.jsx        # 10-world horizontal progress map
+│   │   ├── shared/
+│   │   │   ├── Mascot.jsx              # LearnFlow robot mascot (5 moods)
+│   │   │   ├── NumberBondDiagram.jsx   # Reusable SVG bond diagram
+│   │   │   ├── BarModel.jsx            # Reusable bar model SVG
+│   │   │   ├── CounterGrid.jsx         # Draggable/tappable counter board
+│   │   │   ├── NumberPad.jsx           # Large tap-friendly number input
+│   │   │   ├── FeedbackOverlay.jsx     # Correct/incorrect modal
+│   │   │   └── StoryPanel.jsx          # Reusable illustrated story card
+│   ├── data/
+│   │   ├── questionBank.js       # All 100 question objects (fully specified)
+│   │   └── storyContent.js       # Story phase panel data + narration scripts
+│   ├── hooks/
+│   │   ├── useAudio.js           # ElevenLabs audio engine hook
+│   │   ├── useGameState.js       # Gamification state management hook
+│   │   └── useLocalStorage.js    # Session persistence hook
+│   └── utils/
+│       ├── shuffle.js            # Fisher-Yates randomisation
+│       ├── scoring.js            # XP and star calculation
+│       ├── badgeEngine.js        # Badge unlock logic
+│       ├── narration.js          # Phase → narration segment map
+│       └── audioMap.js           # AUTO-GENERATED: text → .mp3 path map
+├── scripts/
+│   ├── generate_audio.js         # Offline ElevenLabs pre-generation
+│   └── clean_audio.js            # Orphan .mp3 file cleanup
+├── api/
+│   └── elevenlabs.js             # Optional: Vercel serverless proxy
+├── index.html
+├── package.json
+├── vite.config.js
+└── .gitignore
+
+═══════════════════════════════════════════════════════════════
+
+4. APPLICATION STATE ARCHITECTURE
+
+4.1 Global State (App.jsx — useReducer)
+
+const initialState = {
+  // Navigation
+  phase: 'intro',        // 'intro'|'wonder'|'story'|'simulate'|'play'|'reflect'|'results'
+  storyPanel: 0,         // 0–6 (7 panels in Story phase)
+  currentSimStation: 0,  // 0=ReadAndShow, 1=DrawTheBond, 2=WriteTheSentence
+  simStationsComplete: [false, false, false],
+
+  // Play phase
+  questionSet: [],           // 100 shuffled question objects (loaded on phase entry)
+  currentQuestion: 0,        // 0–99
+  currentWorld: 0,           // 0–9 (10 worlds × 10 questions)
+  worldScores: Array(10).fill(null), // Score per world (null=not started, 0–10)
+  hintsUsed: 0,              // Hints used on current question
+  attemptCount: 0,           // Attempts on current question
+
+  // Gamification
+  xp: 0,
+  totalStars: 0,
+  streak: 0,
+  maxStreak: 0,
+  badges: [],               // Array of unlocked badge IDs
+
+  // Phase completion tracking
+  phaseComplete: {
+    wonder: false,
+    story: false,
+    simulate: false,
+    play: false,
+    reflect: false,
+  },
+
+  sessionId: crypto.randomUUID(),
+
+  // Settings
+  audioEnabled: true,
+  musicEnabled: false,
+};
+
+4.2 Reducer Actions
+
+const ACTIONS = {
+  SET_PHASE: 'SET_PHASE',
+  ADVANCE_STORY_PANEL: 'ADVANCE_STORY_PANEL',
+  ADVANCE_SIM_STATION: 'ADVANCE_SIM_STATION',
+  COMPLETE_SIM_STATION: 'COMPLETE_SIM_STATION',
+  LOAD_QUESTIONS: 'LOAD_QUESTIONS',
+  ANSWER_CORRECT: 'ANSWER_CORRECT',
+  ANSWER_INCORRECT: 'ANSWER_INCORRECT',
+  USE_HINT: 'USE_HINT',
+  NEXT_QUESTION: 'NEXT_QUESTION',
+  UNLOCK_BADGE: 'UNLOCK_BADGE',
+  COMPLETE_PHASE: 'COMPLETE_PHASE',
+  TOGGLE_AUDIO: 'TOGGLE_AUDIO',
+  RESTORE_SESSION: 'RESTORE_SESSION',
+  RESET_SESSION: 'RESET_SESSION',
+};
+
+4.3 Key Reducer Cases
+
+case ACTIONS.ANSWER_CORRECT: {
+  const xpGained = calcXP(state.attemptCount + 1, state.hintsUsed, state.streak);
+  const newStreak = state.streak + 1;
+  const newWorldScores = [...state.worldScores];
+  const worldIdx = Math.floor(state.currentQuestion / 10);
+  newWorldScores[worldIdx] = (newWorldScores[worldIdx] || 0) + 1;
+  return {
+    ...state,
+    xp: state.xp + xpGained,
+    streak: newStreak,
+    maxStreak: Math.max(state.maxStreak, newStreak),
+    worldScores: newWorldScores,
+    hintsUsed: 0,
+    attemptCount: 0,
+  };
+}
+
+case ACTIONS.ANSWER_INCORRECT: {
+  return {
+    ...state,
+    streak: 0,
+    attemptCount: state.attemptCount + 1,
+  };
+}
+
+═══════════════════════════════════════════════════════════════
+
+5. QUESTION DATA MODEL
+
+5.1 Question Schema (TypeScript-style)
+
+interface Question {
+  id: string;                // e.g. "Q1_001", "Q6_008"
+  type: QuestionType;        // Enum (10 types — see PRD §7.1)
+  world: number;             // 0–9
+  difficulty: 1 | 2 | 3;    // 1=easy(≤10), 2=medium(≤15), 3=hard(≤20)
+
+  // Math values
+  whole: number;             // Minuend (total / whole in bond)
+  part1: number;             // Subtrahend (given part / amount removed)
+  part2: number;             // Difference (answer / remaining part)
+  missingSlot: 'whole' | 'part1' | 'part2';
+
+  // Story content (for word problems)
+  characterName: string;     // 'Wei Ming', 'Priya', etc.
+  objectName: string;        // 'fishballs', 'stickers', etc.
+  objectEmoji: string;       // '🍢', '🏷️', etc.
+  actionVerb: string;        // 'ate', 'gave away', 'lost', 'used'
+  worldTheme: string;        // 'Hawker Centre', 'Playground', etc.
+
+  // Question display
+  questionText: string;      // Full narrated question text (ElevenLabs)
+  answerSentence: string;    // "[Character] has [_] [objects] left."
+  visual: VisualType;        // Renders correct sub-component
+
+  // MCQ options (when applicable)
+  options?: (number | string)[];  // Always 4 options
+  correctAnswer: number | string;
+
+  // Hints + explanation
+  hint1Text: string;         // Text for Hint Level 1 (ElevenLabs narrated)
+  hint1Visual: 'bond' | 'bar' | 'counters';
+  hint2Text: string;         // Text for Hint Level 2 (ElevenLabs narrated)
+  explanation: string;       // Full explanation after 2 fails (narrated)
+}
+
+type QuestionType =
+  | 'word_mcq'          // Q1: Read problem → select answer from 4 options
+  | 'word_bond'         // Q2: Problem → complete number bond diagram
+  | 'word_sentence'     // Q3: Bond shown → write subtraction sentence
+  | 'answer_sentence'   // Q4: Fill the answer sentence
+  | 'picture_word'      // Q5: Emoji picture + story → answer
+  | 'find_whole'        // Q6: Reverse — find the whole
+  | 'add_or_subtract'   // Q7: Should we + or –?
+  | 'match_bond'        // Q8: Match story to one of 4 bond diagrams
+  | 'true_false'        // Q9: Is this subtraction sentence correct?
+  | 'word_tile';        // Q10: Drag word tiles to complete answer sentence
+
+type VisualType =
+  | 'bond_with_story'
+  | 'bond_only'
+  | 'counters_with_story'
+  | 'sentence_with_bond'
+  | 'four_bonds_choice'
+  | 'true_false_card'
+  | 'word_tiles';
+
+5.2 Sample Question Objects
+
+// Q1 — Word Problem MCQ (easy, World 0: Hawker Centre)
+{
+  id: "Q1_001",
+  type: "word_mcq",
+  world: 0,
+  difficulty: 1,
+  whole: 9, part1: 4, part2: 5,
+  missingSlot: "part2",
+  characterName: "Wei Ming",
+  objectName: "fishballs",
+  objectEmoji: "🍢",
+  actionVerb: "ate",
+  worldTheme: "Hawker Centre",
+  questionText: "Wei Ming had 9 fishballs. He ate 4. How many fishballs did he have left?",
+  answerSentence: "Wei Ming had [5] fishballs left.",
+  visual: "counters_with_story",
+  options: [3, 4, 5, 6],
+  correctAnswer: 5,
+  hint1Text: "Draw a number bond. The whole is 9. One part is 4.",
+  hint1Visual: "bond",
+  hint2Text: "Show 9 fishballs. Take away 4. Count what is left.",
+  hint2Visual: "counters",
+  explanation: "9 – 4 = 5. Wei Ming had 5 fishballs left.",
+}
+
+// Q2 — Word Problem → Complete Bond (medium, World 3: Night Safari)
+{
+  id: "Q2_031",
+  type: "word_bond",
+  world: 3,
+  difficulty: 2,
+  whole: 13, part1: 6, part2: 7,
+  missingSlot: "part2",
+  characterName: "Raju",
+  objectName: "animals",
+  objectEmoji: "🦁",
+  actionVerb: "saw run away",
+  worldTheme: "Night Safari",
+  questionText: "Raju saw 13 animals at the Night Safari. 6 ran away. How many animals were left?",
+  answerSentence: "Raju saw [7] animals left.",
+  visual: "bond_with_story",
+  options: [6, 7, 8, 9],
+  correctAnswer: 7,
+  hint1Text: "Put 13 at the top of the number bond. Put 6 in one circle.",
+  hint1Visual: "bond",
+  hint2Text: "13 take away 6. Start at 13 and count back 6 steps.",
+  hint2Visual: "counters",
+  explanation: "13 – 6 = 7. Raju saw 7 animals left.",
+}
+
+// Q6 — Find the Whole (hard, World 8: Sports Day)
+{
+  id: "Q6_081",
+  type: "find_whole",
+  world: 8,
+  difficulty: 3,
+  whole: 18, part1: 9, part2: 9,
+  missingSlot: "whole",
+  characterName: "Ahmad",
+  objectName: "stickers",
+  objectEmoji: "🏷️",
+  actionVerb: "gave away",
+  worldTheme: "Sports Day",
+  questionText: "Ahmad gave away 9 stickers. He has 9 stickers left. How many stickers did Ahmad have at the start?",
+  answerSentence: "Ahmad had [18] stickers at the start.",
+  visual: "bond_with_story",
+  options: [16, 17, 18, 20],
+  correctAnswer: 18,
+  hint1Text: "The two parts are 9 and 9. Add them to find the whole.",
+  hint1Visual: "bond",
+  hint2Text: "9 + 9 = ? That is the whole number.",
+  hint2Visual: "counters",
+  explanation: "9 + 9 = 18. Ahmad had 18 stickers at the start.",
+}
+
+5.3 Question Bank File Structure (questionBank.js)
+
+// data/questionBank.js
+// 100 questions: 10 types × 10 questions each
+// Each type contains: 4 easy (world 0–2), 3 medium (world 3–6), 3 hard (world 7–9)
+
+export const QUESTION_BANK = [
+  // Q1: word_mcq (Q1_001 to Q1_010)
+  // Q2: word_bond (Q2_011 to Q2_020)
+  // Q3: word_sentence (Q3_021 to Q3_030)
+  // Q4: answer_sentence (Q4_031 to Q4_040)
+  // Q5: picture_word (Q5_041 to Q5_050)
+  // Q6: find_whole (Q6_051 to Q6_060)
+  // Q7: add_or_subtract (Q7_061 to Q7_070)
+  // Q8: match_bond (Q8_071 to Q8_080)
+  // Q9: true_false (Q9_081 to Q9_090)
+  // Q10: word_tile (Q10_091 to Q10_100)
+  ...questions
+];
+
+═══════════════════════════════════════════════════════════════
+
+6. SIMULATION COMPONENT SPECS
+
+6.1 ReadAndShowStation.jsx — Station A (Concrete)
+
+Props:  { problem: SimProblem, onComplete: () => void }
+
+State:
+  const [placed, setPlaced] = useState(0);       // Counters placed
+  const [removed, setRemoved] = useState(0);     // Counters removed
+  const remaining = placed - removed;            // Auto-calculated
+
+SimProblem type:
+  { whole, part1, part2, emoji, story, character, object }
+
+Interaction flow:
+  Step 1 — ElevenLabs narrates the problem
+  Step 2 — "Place [whole] [emojis]" → student taps '+' button or
+            counter grid fills automatically with tap-to-confirm
+  Step 3 — "Now take away [part1]" → student taps counters to remove
+            Removed counters animate "fly-away" (CSS translateY + fade)
+  Step 4 — Remaining count shown with bounce animation
+  Step 5 — Number bond SVG auto-fills with all three values
+  Step 6 — onComplete() fires when remaining === part2
+
+Accessibility:
+  - Large counter circles (min 48×48px)
+  - Keyboard: Space to place, Tab+Space to remove
+  - Counter removal also via "-" button (not drag-only)
+
+6.2 DrawTheBondStation.jsx — Station B (Pictorial)
+
+Props:  { problem: SimProblem, onComplete: () => void }
+
+State:
+  const [placedWhole, setPlacedWhole] = useState(null);
+  const [placedPart1, setPlacedPart1] = useState(null);
+  const [placedPart2, setPlacedPart2] = useState(null);
+  const isComplete = placedWhole && placedPart1 && placedPart2;
+
+Render:
+  - Word problem text shown at top (narrated on mount)
+  - 3 draggable number tiles at bottom: [whole], [part1], [part2] — shuffled
+  - SVG NumberBondDiagram with 3 drop zones
+  - Bar model SVG updates live as tiles are placed
+
+DnD Implementation:
+  - HTML5 drag-and-drop for desktop
+  - Touch event handlers (touchstart, touchmove, touchend) for tablet
+  - Drop zone highlights with CSS :hover on drag-enter
+  - Correct placement: bounce + green border flash
+  - Incorrect zone: shake + red border flash + tile returns to tray
+
+6.3 WriteTheSentenceStation.jsx — Station C (Abstract)
+
+Props:  { problem: SimProblem, onComplete: () => void }
+
+State:
+  const [wholeInput, setWholeInput] = useState('');
+  const [part1Input, setPart1Input] = useState('');
+  const [part2Input, setPart2Input] = useState('');
+  const [answerInput, setAnswerInput] = useState('');
+  const [activeField, setActiveField] = useState('whole'); // NumberPad target
+  const [showBondHint, setShowBondHint] = useState(false);
+
+Layout:
+  Word problem text (top)
+  ─────────────────────────
+  [ ___ ] – [ ___ ] = [ ___ ]
+  ─────────────────────────
+  "[Character] has [ ___ ] [objects] left."
+  ─────────────────────────
+  [Show number bond 🔢] button
+  ─────────────────────────
+  NumberPad (opens below active field)
+
+Validation sequence:
+  1. Whole field validated first → must equal problem.whole
+  2. Part1 field → must equal problem.part1
+  3. Part2 field → must equal problem.part2
+  4. Answer sentence → tap correct number tile from options
+  5. All correct → celebration animation → onComplete()
+
+═══════════════════════════════════════════════════════════════
+
+7. SVG COMPONENTS
+
+7.1 NumberBondDiagram.jsx
+
+Props: {
+  whole: number | null,
+  part1: number | null,
+  part2: number | null,
+  missing: 'whole' | 'part1' | 'part2' | null,
+  dropZones?: boolean,           // Show drag-drop targets
+  animated?: boolean,            // Animate fill on mount
+  size?: 'small' | 'medium' | 'large',
+  theme?: 'default' | 'highlight' | 'hint',
+}
+
+// SVG viewBox: "0 0 220 160"
+// Whole circle:  cx=110 cy=32  r=28
+// Branch left:   x1=82 y1=60 → x2=62 y2=95
+// Branch right:  x1=138 y1=60 → x2=158 y2=95
+// Part1 circle:  cx=50  cy=118 r=24
+// Part2 circle:  cx=170 cy=118 r=24
+
+Colour tokens (CSS variables from numberbound):
+  --bond-whole-fill: var(--color-primary-blue)   → #4A90D9
+  --bond-part-fill:  var(--color-accent-orange)  → #FF8A50
+  --bond-empty-fill: #FFF9C4
+  --bond-empty-stroke: #FFB300
+  --bond-empty-dash: "6,3"
+
+7.2 BarModel.jsx
+
+Props: {
+  whole: number,
+  part1: number,
+  part2: number,
+  missing: 'whole' | 'part1' | 'part2',
+  label?: string,
+  animated?: boolean,
+}
+
+// SVG viewBox: "0 0 300 80"
+// Whole bar:  full width, top row, labelled above
+// Part1 bar:  proportional segment, bottom row, left
+// Part2 bar:  proportional segment, bottom row, right (or "?")
+// Scale:      each unit = (260px / whole) width
+// Colours:    Part1 → #4A90D9, Part2 → #FF8A50, Unknown → #FFF9C4 dashed
+
+═══════════════════════════════════════════════════════════════
+
+8. RANDOMISATION ENGINE
+
+8.1 Fisher-Yates Shuffle
+
+// utils/shuffle.js
+export function shuffleArray(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+export function generateSessionQuestions(bank) {
+  // Group by type, take 10 from each (shuffled within type), then global shuffle
+  const byType = bank.reduce((acc, q) => {
+    (acc[q.type] = acc[q.type] || []).push(q);
+    return acc;
+  }, {});
+  const selected = Object.values(byType).flatMap(qs =>
+    shuffleArray(qs).slice(0, 10)
+  );
+  return shuffleArray(selected); // Final global shuffle of all 100
+}
+
+8.2 MCQ Distractor Generation
+
+// utils/scoring.js
+export function generateDistractors(correct, min = 0, max = 20, count = 3) {
+  const distractors = new Set();
+  let attempts = 0;
+  while (distractors.size < count && attempts < 50) {
+    const offset = (Math.random() > 0.5 ? 1 : -1) * (Math.ceil(Math.random() * 3));
+    const d = correct + offset;
+    if (d >= min && d <= max && d !== correct) distractors.add(d);
+    attempts++;
+  }
+  // Ensure fallback distractors
+  for (const d of [correct - 1, correct + 1, correct + 2, correct - 2]) {
+    if (d >= min && d <= max && d !== correct && distractors.size < count)
+      distractors.add(d);
+  }
+  return shuffleArray([correct, ...[...distractors].slice(0, count)]);
+}
+
+8.3 Session Persistence (localStorage)
+
+const SESSION_KEY = 'intellia_wp_sub_v1';
+const SESSION_TTL = 86400000; // 24 hours
+
+export function saveSession(state) {
+  localStorage.setItem(SESSION_KEY, JSON.stringify({
+    phase: state.phase,
+    storyPanel: state.storyPanel,
+    currentSimStation: state.currentSimStation,
+    simStationsComplete: state.simStationsComplete,
+    currentQuestion: state.currentQuestion,
+    currentWorld: state.currentWorld,
+    worldScores: state.worldScores,
+    xp: state.xp,
+    totalStars: state.totalStars,
+    badges: state.badges,
+    phaseComplete: state.phaseComplete,
+    maxStreak: state.maxStreak,
+    audioEnabled: state.audioEnabled,
+    timestamp: Date.now(),
+  }));
+}
+
+export function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    if (Date.now() - saved.timestamp > SESSION_TTL) {
+      localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return saved;
+  } catch {
+    return null;
+  }
+}
+
+═══════════════════════════════════════════════════════════════
+
+9. GAMIFICATION IMPLEMENTATION
+
+9.1 XP Calculation
+
+// utils/scoring.js
+export function calcXP(attemptNumber, hintsUsed, streak) {
+  let base;
+  if (attemptNumber === 1 && hintsUsed === 0) base = 10;
+  else if (hintsUsed > 0) base = 5;
+  else base = 7;
+  const streakBonus = streak >= 5 ? 5 : 0;
+  return base + streakBonus;
+}
+
+9.2 Star Rating (per world)
+
+export function calcStars(correct, total = 10) {
+  if (correct >= 9) return 3;
+  if (correct >= 7) return 2;
+  if (correct >= 5) return 1;
+  return 0;
+}
+export const canUnlockWorld = (score) => score !== null && score >= 5;
+
+9.3 Badge Engine
+
+// utils/badgeEngine.js
+export const BADGES = [
+  {
+    id: 'problem_spotter',
+    label: '🏅 Problem Spotter',
+    description: 'Complete Wonder & Story phases',
+    condition: (s) => s.phaseComplete.wonder && s.phaseComplete.story,
+    elevenlabsText: "You earned the Problem Spotter badge! You know how to find the question!",
+  },
+  {
+    id: 'model_builder',
+    label: '🥈 Model Builder',
+    description: 'Complete all 3 simulation stations',
+    condition: (s) => s.simStationsComplete.every(Boolean),
+    elevenlabsText: "Model Builder badge unlocked! You can draw number bonds like a pro!",
+  },
+  {
+    id: 'word_problem_whiz',
+    label: '🥇 Word Problem Whiz',
+    description: 'Score 80%+ on Play phase',
+    condition: (s) => {
+      const total = s.worldScores.reduce((sum, w) => sum + (w || 0), 0);
+      const attempted = s.worldScores.filter(w => w !== null).length * 10;
+      return attempted > 0 && (total / attempted) >= 0.8;
+    },
+    elevenlabsText: "Word Problem Whiz! You are amazing at solving word problems!",
+  },
+  {
+    id: 'perfect_story',
+    label: '💎 Perfect Story',
+    description: 'Score 10/10 in any world',
+    condition: (s) => s.worldScores.some(w => w === 10),
+    elevenlabsText: "Perfect Story badge! Ten out of ten! You are a superstar!",
+  },
+  {
+    id: 'streak_legend',
+    label: '🔥 Streak Legend',
+    description: '10+ consecutive correct answers',
+    condition: (s) => s.maxStreak >= 10,
+    elevenlabsText: "Streak Legend! Ten in a row! You are on fire!",
+  },
+  {
+    id: 'full_champion',
+    label: '🌟 Full Champion',
+    description: 'Complete all 5 phases',
+    condition: (s) => Object.values(s.phaseComplete).every(Boolean),
+    elevenlabsText: "Full Champion! You finished the whole lesson! You are a Word Problem Champion!",
+  },
+  {
+    id: 'singapore_solver',
+    label: '🦁 Singapore Solver',
+    description: 'Complete all 10 worlds',
+    condition: (s) => s.worldScores.filter(w => w !== null).length === 10,
+    elevenlabsText: "Singapore Solver! You explored every world! Amazing work!",
+  },
+  {
+    id: 'bond_story_link',
+    label: '📚 Bond & Story Link',
+    description: 'Complete a world without using any hints',
+    condition: (s) => {
+      // Tracked per-world in state.worldHintsUsed[]
+      return (s.worldHintsUsed || []).some(h => h === 0 && s.worldScores[s.worldHintsUsed.indexOf(h)] !== null);
+    },
+    elevenlabsText: "Bond and Story Link badge! You solved it all by yourself! Brilliant!",
+  },
+];
+
+export function checkBadges(state) {
+  return BADGES
+    .filter(b => !state.badges.includes(b.id) && b.condition(state))
+    .map(b => b.id);
+}
+
+═══════════════════════════════════════════════════════════════
+
+10. CSS ANIMATION KEYFRAMES (match numberbound exactly)
+
+/* App.css — shared with numberbound visual identity */
+
+/* ── Core Animations ─────────────────────────────── */
+@keyframes bounceIn {
+  0%   { transform: scale(0.3); opacity: 0; }
+  50%  { transform: scale(1.05); opacity: 1; }
+  70%  { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-8px); }
+  40%       { transform: translateX(8px); }
+  60%       { transform: translateX(-6px); }
+  80%       { transform: translateX(6px); }
+}
+
+@keyframes floatUp {
+  0%   { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-60px) scale(1.5); opacity: 0; }
+}
+
+@keyframes flyAway {
+  0%   { transform: translateY(0) translateX(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(-80px) translateX(40px) rotate(45deg); opacity: 0; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74, 144, 217, 0.4); }
+  50%       { box-shadow: 0 0 0 12px rgba(74, 144, 217, 0); }
+}
+
+@keyframes celebrate {
+  0%   { transform: rotate(-5deg) scale(1); }
+  25%  { transform: rotate(5deg) scale(1.1); }
+  50%  { transform: rotate(-3deg) scale(1.05); }
+  75%  { transform: rotate(3deg) scale(1.1); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+@keyframes slideInUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(40px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes dashFill {
+  from { stroke-dashoffset: 100; }
+  to   { stroke-dashoffset: 0; }
+}
+
+@keyframes barGrow {
+  from { width: 0; }
+  to   { width: var(--bar-target-width); }
+}
+
+@keyframes xpFloat {
+  0%   { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-40px); opacity: 0; }
+}
+
+/* ── Bond Diagram SVG Animations ─────────────────── */
+.bond-circle-fill {
+  transition: fill 0.3s ease, stroke 0.2s ease;
+}
+.bond-correct { animation: bounceIn 0.4s ease; }
+.bond-wrong   { animation: shake 0.4s ease; }
+.bond-hint    { animation: pulseGlow 1.5s ease infinite; }
+
+/* ── Counter Animations ───────────────────────────── */
+.counter-flyaway { animation: flyAway 0.5s ease forwards; }
+.counter-appear  { animation: bounceIn 0.3s ease; }
+
+═══════════════════════════════════════════════════════════════
+
+11. AUDIO PIPELINE — ELEVENLABS IMPLEMENTATION
+    (Mirrors audio_generation_pipeline.md from Addition module)
+
+11.1 Voice Profile & ElevenLabs Settings
+
+  Voice Name:    Alice (Clear, Engaging Educator)
+  Voice ID:      Xb7hH8MSUJpSbSDYk0k2
+  Model:         eleven_multilingual_v2
+  API Endpoint:  https://api.elevenlabs.io/v1/text-to-speech/{voice_id}
+
+Speech style → ElevenLabs settings map:
+
+  Style Tag     | stability | similarity_boost | style | Description
+  --------------|-----------|------------------|-------|-----------------------------
+  statement     | 0.75      | 0.80             | 0.10  | Warm, clear instruction
+  question      | 0.60      | 0.75             | 0.25  | Higher pitch, slower
+  encouragement | 0.50      | 0.85             | 0.45  | Warm, upbeat, excited
+  emphasis      | 0.80      | 0.85             | 0.15  | Slow, very clear
+  thinking      | 0.70      | 0.75             | 0.20  | Gentle, curious, inviting
+  celebration   | 0.40      | 0.90             | 0.55  | Fast, joyful, excited
+
+11.2 Offline Pre-Generation (scripts/generate_audio.js)
+
+Mirrors the addition module script. Phrases array includes ALL static
+narration scripts: Intro, Wonder hook, all 7 Story panels, all 3
+Simulate station instructions, all UI messages, all badge narrations,
+phase complete messages, and Reflect prompts.
+
+// Example phrases entry (word problems subtraction module)
+const phrases = [
+  // Intro
+  { text: "Welcome to Word Problems Using Subtraction!", style: 'statement' },
+  { text: "In this lesson, you will learn how to solve subtraction word problems.", style: 'statement' },
+
+  // Wonder phase
+  { text: "Siti had 10 balloons at her party. Some flew away! Now she has 6. How many flew away?", style: 'question' },
+  { text: "Let's learn how to solve it together!", style: 'encouragement' },
+
+  // Story phase — Panel 1
+  { text: "Wei Ming is at the hawker centre. He has 9 fishballs!", style: 'statement' },
+  { text: "He eats 4 fishballs. Yum, yum, yum!", style: 'statement' },
+  { text: "How many fishballs does Wei Ming have left?", style: 'question' },
+  { text: "What do we know? The whole is 9. One part is 4.", style: 'emphasis' },
+  { text: "We need to find the other part. This is what is left!", style: 'thinking' },
+  { text: "Draw the number bond. Put 9 at the top. Put 4 in one circle.", style: 'instruction' },
+  { text: "Now write the number sentence. 9 minus 4 equals 5.", style: 'emphasis' },
+  { text: "Wei Ming has 5 fishballs left!", style: 'celebration' },
+
+  // Simulate stations
+  { text: "Station One! Read the story. Now place the counters.", style: 'statement' },
+  { text: "Great! Now take away the right number of counters.", style: 'instruction' },
+  { text: "Station Two! Drag the numbers into the correct circles.", style: 'statement' },
+  { text: "Station Three! Write the subtraction sentence.", style: 'statement' },
+
+  // Gamification
+  { text: "Amazing! You solved the word problem!", style: 'celebration' },
+  { text: "Brilliant! You used the number bond perfectly!", style: 'celebration' },
+  { text: "Let's try again! Read the problem carefully.", style: 'thinking' },
+  { text: "Almost there! Think about what we need to find.", style: 'thinking' },
+
+  // Badge narrations (from badgeEngine.js elevenlabsText fields)
+  // ... (all badge texts from Section 9.3)
+
+  // Reflect phase
+  { text: "Wonderful! You are a Word Problem Champion!", style: 'celebration' },
+  { text: "Tell me one thing you learned today!", style: 'question' },
+  { text: "Can you make up your own subtraction word problem?", style: 'question' },
+];
+
+Generation command:
+  node scripts/generate_audio.js
+
+This script:
+  1. Reads phrases array
+  2. Calls ElevenLabs API with VITE_ELEVENLABS_API_KEY from .env.local
+  3. Saves .mp3 files to public/assets/audio/
+  4. Writes/updates src/utils/audioMap.js automatically
+
+11.3 audioMap.js Format
+
+// src/utils/audioMap.js — AUTO-GENERATED, do not edit manually
+export const audioMap = {
+  "Welcome to Word Problems Using Subtraction!":
+    "/assets/audio/audio_welcome_to_word_problems_..._0.mp3",
+  "Wei Ming is at the hawker centre. He has 9 fishballs!":
+    "/assets/audio/audio_wei_ming_is_at_the_hawker_..._0.mp3",
+  // ... all pre-generated phrases
+};
+
+11.4 Frontend Audio Engine (src/utils/audio.js)
+
+// Matches addition module audio.js exactly, adapted for subtraction module
+
+const elevenLabsCache = new Map(); // In-memory URL cache
+
+export async function getAudioUrl(text, style = 'statement') {
+  // 1. Check pre-generated static map
+  if (audioMap[text]) return audioMap[text];
+
+  // 2. Check in-memory dynamic cache
+  const cacheKey = `${text}::${style}`;
+  if (elevenLabsCache.has(cacheKey)) return elevenLabsCache.get(cacheKey);
+
+  // 3. Dynamic generation via ElevenLabs API
+  const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
+  if (!apiKey) return null; // Silent skip — no fallback
+
+  const VOICE_ID = 'Xb7hH8MSUJpSbSDYk0k2';
+  const styleSettings = SPEECH_STYLES[style] || SPEECH_STYLES.statement;
+
+  try {
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
+      {
+        method: 'POST',
+        headers: {
+          'xi-api-key': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text,
+          model_id: 'eleven_multilingual_v2',
+          voice_settings: styleSettings,
+        }),
+      }
+    );
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    elevenLabsCache.set(cacheKey, url);
+    return url;
+  } catch {
+    return null; // Silent skip on error
+  }
+}
+
+const SPEECH_STYLES = {
+  statement:    { stability: 0.75, similarity_boost: 0.80, style: 0.10 },
+  question:     { stability: 0.60, similarity_boost: 0.75, style: 0.25 },
+  encouragement:{ stability: 0.50, similarity_boost: 0.85, style: 0.45 },
+  emphasis:     { stability: 0.80, similarity_boost: 0.85, style: 0.15 },
+  thinking:     { stability: 0.70, similarity_boost: 0.75, style: 0.20 },
+  celebration:  { stability: 0.40, similarity_boost: 0.90, style: 0.55 },
+};
+
+// Seamless narration with eager preloading
+export async function narrate(segments, audioEnabled) {
+  if (!audioEnabled) return;
+  for (let i = 0; i < segments.length; i++) {
+    const { text, style } = segments[i];
+
+    // Preload next segment while current is playing
+    if (i + 1 < segments.length) {
+      getAudioUrl(segments[i + 1].text, segments[i + 1].style); // Fire and forget
+    }
+
+    const url = await getAudioUrl(text, style);
+    if (!url) continue; // Silent skip if unavailable
+
+    await new Promise((resolve) => {
+      const audio = new Audio(url);
+      audio.onended = resolve;
+      audio.onerror = resolve; // Never block on error
+      audio.play().catch(resolve);
+    });
+  }
+}
+
+11.5 narration.js — Phase Script Map
+
+// src/utils/narration.js
+// Maps each phase and event to narration segment arrays
+// Uses say(), ask(), cheer(), emphasize(), think(), celebrate() helpers
+
+const say    = (text) => ({ text, style: 'statement' });
+const ask    = (text) => ({ text, style: 'question' });
+const cheer  = (text) => ({ text, style: 'encouragement' });
+const stress = (text) => ({ text, style: 'emphasis' });
+const think  = (text) => ({ text, style: 'thinking' });
+const party  = (text) => ({ text, style: 'celebration' });
+
+export function introNarration() {
+  return [
+    say("Welcome to Word Problems Using Subtraction!"),
+    say("In this lesson, you will learn how to solve subtraction word problems."),
+    cheer("Let's start our adventure!"),
+  ];
+}
+
+export function wonderNarration() {
+  return [
+    ask("Siti had 10 balloons at her party. Some flew away! Now she has 6. How many flew away?"),
+    think("Hmm... I wonder how we can find out?"),
+    cheer("Let's learn how to solve it together!"),
+  ];
+}
+
+export function storyNarration() {
+  return [
+    say("Wei Ming is at the hawker centre. He has 9 fishballs!"),
+    say("He eats 4 fishballs. Yum, yum, yum!"),
+    ask("How many fishballs does Wei Ming have left?"),
+    stress("What do we know? The whole is 9. One part is 4."),
+    think("We need to find the other part. This is what is left!"),
+    say("Draw the number bond. Put 9 at the top. Put 4 in one circle."),
+    stress("Now write the number sentence. 9 minus 4 equals 5."),
+    party("Wei Ming has 5 fishballs left!"),
+  ];
+}
+
+export function simulateStationNarration(station) {
+  const scripts = {
+    0: [
+      say("Station One! Read the story. Now place the counters."),
+      say("Great! Now take away the right number of counters."),
+      ask("How many are left?"),
+    ],
+    1: [
+      say("Station Two! Look at the number bond."),
+      say("Drag the numbers into the correct circles."),
+      say("The whole goes at the top. The parts go at the bottom."),
+    ],
+    2: [
+      say("Station Three! Write the subtraction sentence."),
+      say("Tap each box and type the number."),
+      say("Then complete the answer sentence."),
+    ],
+  };
+  return scripts[station] || [];
+}
+
+export function correctNarration() {
+  const options = [
+    [party("Amazing! You solved the word problem!")],
+    [party("Brilliant! You used the number bond perfectly!")],
+    [party("You're a maths superstar! Keep going!")],
+    [cheer("Wonderful! That's exactly right!")],
+  ];
+  return options[Math.floor(Math.random() * options.length)];
+}
+
+export function incorrectNarration() {
+  const options = [
+    [think("Let's try again! Read the problem carefully.")],
+    [think("Almost there! Think about what we need to find.")],
+    [think("Hmm... look at the number bond. It will help you!")],
+  ];
+  return options[Math.floor(Math.random() * options.length)];
+}
+
+export function hint1Narration(hintText) {
+  return [think(hintText)];
+}
+
+export function hint2Narration(hintText) {
+  return [think(hintText)];
+}
+
+export function reflectNarration() {
+  return [
+    party("Wonderful! You are a Word Problem Champion!"),
+    ask("Tell me one thing you learned today!"),
+    ask("Can you make up your own subtraction word problem?"),
+  ];
+}
+
+11.6 Audio Cleanup (scripts/clean_audio.js)
+
+Imports audioMap.js → determines all valid referenced .mp3 files.
+Scans public/assets/audio/ → deletes orphaned .mp3 files no longer in map.
+Run after any script changes: node scripts/clean_audio.js
+
+11.7 Updating Narration — Step-by-Step Workflow
+
+1. Add new text to generate_audio.js phrases array:
+   { text: "Your new narration line.", style: 'statement' }
+
+2. Run: node scripts/generate_audio.js
+   → Calls ElevenLabs API, saves .mp3, updates audioMap.js
+
+3. Optionally: node scripts/clean_audio.js
+   → Removes orphaned .mp3 files from previous version
+
+4. Add matching text to narration.js using helper functions:
+   say("Your new narration line.")
+   TEXT MUST BE IDENTICAL to generate_audio.js entry (1:1 parity)
+
+═══════════════════════════════════════════════════════════════
+
+12. COMPONENT PROP CONTRACTS (Key Components)
+
+NumberBondDiagram
+  Props: { whole, part1, part2, missing, dropZones?, animated?, size?, theme? }
+  Returns: SVG element (inline, responsive)
+
+BarModel
+  Props: { whole, part1, part2, missing, label?, animated? }
+  Returns: SVG element
+
+CounterGrid
+  Props: { total, removed, onRemove, emoji?, interactive? }
+  Returns: Touch/drag counter area
+
+NumberPad
+  Props: { max, value, onChange, onSubmit, disabled? }
+  Returns: Button grid (min 48×48px per button, 0 through max)
+
+Mascot
+  Props: { mood: 'idle'|'happy'|'thinking'|'celebrating'|'helping' }
+  Returns: SVG image with CSS animation class
+
+QuestionRenderer
+  Props: { question: Question, onAnswer: (answer: number|string) => void }
+  Returns: Type-dispatched question component
+
+FeedbackOverlay
+  Props: { isCorrect: boolean, explanation?: string, onContinue: () => void }
+  Returns: Animated modal overlay
+
+StoryPanel
+  Props: { panelIndex: number, data: StoryPanelData, onNext: () => void }
+  Returns: Illustrated card with narration trigger
+
+WorldMap
+  Props: { worldScores: (number|null)[], currentWorld: number, onSelectWorld: (i: number) => void }
+  Returns: Horizontal scrollable world list with lock icons
+
+HintOverlay
+  Props: { level: 1|2, hintText: string, visual: 'bond'|'bar'|'counters', problem: Question }
+  Returns: Hint panel with visual and narration
+
+═══════════════════════════════════════════════════════════════
+
+13. PERFORMANCE REQUIREMENTS
+
+Metric                     | Target
+---------------------------|------------------
+Initial page load time     | < 2 seconds
+Time to first interaction  | < 1 second
+SVG animation frame rate   | 60fps
+Memory usage               | < 65MB
+Bundle size (gzipped)      | < 650KB
+Lighthouse Performance     | ≥ 90
+Lighthouse Accessibility   | ≥ 90
+Audio pre-gen latency      | 0ms (static assets)
+Audio dynamic gen latency  | < 1.5s (ElevenLabs API, cached)
+Seamless audio gap         | 0ms (eager preload strategy)
+
+═══════════════════════════════════════════════════════════════
+
+14. BROWSER & DEVICE SUPPORT
+
+Environment              | Support Level
+-------------------------|----------------
+Chrome 110+              | Full
+Safari 15+ (iPad)        | Full (primary target)
+Firefox 110+             | Full
+Edge 110+                | Full
+Android Chrome           | Full
+iOS Safari 15+           | Full
+IE 11                    | Not supported
+
+Primary Test Device:  iPad (768px+, touch) — Singapore classroom context
+Secondary:            Desktop Chrome (1280px+)
+Tertiary:             iPhone (375px+)
+
+iPad-specific considerations:
+  - All drag interactions have parallel touch event handlers
+  - Minimum tap target 48×48px (above WCAG minimum)
+  - No hover-only interactions (touch-first design)
+  - ElevenLabs audio requires user gesture before first play (iOS Safari)
+    → Audio unlocked on first tap of any interactive element
+
+═══════════════════════════════════════════════════════════════
+
+15. WORDPRESS EMBEDDING (Intellia SG)
+
+Option A — React CDN Bundle (preferred)
+  <!-- In WordPress Custom HTML block at lesson page -->
+  <div id="wp-subtraction-app"></div>
+  <script src="https://cdn.intelliasg.com/lessons/wp-subtraction.js"></script>
+
+  The bundle sets window.VITE_ELEVENLABS_API_KEY before initialising React,
+  or reads it from a server-injected meta tag:
+  <meta name="elevenlabs-key" content="{{ encrypted_key }}">
+
+Option B — iframe Embed
+  <iframe
+    src="https://lessons.intelliasg.com/grade1/word-problems-subtraction"
+    width="100%"
+    height="780px"
+    frameborder="0"
+    allow="autoplay; microphone"
+    style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);"
+  ></iframe>
+
+iframe height: 780px (with internal scroll). Width: 100%.
+Page must match the lesson page layout at intelliasg.com exactly.
+
+API Key Security:
+  - VITE_ELEVENLABS_API_KEY is an environment variable, never committed to git
+  - In production, API calls are proxied through api/elevenlabs.js serverless fn
+  - The Vercel/CDN function adds the key server-side; client never sees raw key
+
+═══════════════════════════════════════════════════════════════
+
+16. QUALITY ASSURANCE CHECKLIST
+
+Category        | Test Case                                                     | Status
+----------------|---------------------------------------------------------------|-------
+Questions       | All 100 questions render without error                        | TBD
+Questions       | MCQ always includes correct answer in options                 | TBD
+Questions       | No duplicate options in any MCQ question                      | TBD
+Questions       | Randomisation produces unique order each session              | TBD
+Questions       | Q6 (find_whole) correctly validates addition answer           | TBD
+Questions       | Q7 (add_or_subtract) correctly identifies subtraction context | TBD
+Simulations     | Station A: counters place and remove correctly (touch+mouse)  | TBD
+Simulations     | Station A: flyaway animation triggers on removal              | TBD
+Simulations     | Station B: drag-and-drop works on tablet touch                | TBD
+Simulations     | Station B: bar model updates live with bond placement         | TBD
+Simulations     | Station C: number pad opens on field tap                      | TBD
+Simulations     | Station C: answer sentence validates correctly                | TBD
+SVG Diagrams    | NumberBondDiagram renders correctly for 0–20                  | TBD
+SVG Diagrams    | BarModel proportions correct for all number ranges            | TBD
+Phases          | All 5 phases navigate end-to-end without error                | TBD
+Phases          | Phase completion tracking updates correctly                   | TBD
+Audio           | ElevenLabs narration plays on Intro phase mount               | TBD
+Audio           | ElevenLabs narration plays on Wonder phase mount              | TBD
+Audio           | ElevenLabs narration plays on each Story panel                | TBD
+Audio           | ElevenLabs narration plays on each Simulate station           | TBD
+Audio           | ElevenLabs narration plays for every Play question            | TBD
+Audio           | Correct feedback narration plays on correct answer            | TBD
+Audio           | Incorrect feedback narration plays on wrong answer            | TBD
+Audio           | Badge unlock narration plays on badge award                   | TBD
+Audio           | Seamless playback: no audible gap between segments            | TBD
+Audio           | Eager preload: segment i+1 fetched while i plays              | TBD
+Audio           | Silent skip when no API key (no crash, no error shown)        | TBD
+Audio           | audioMap covers all static phrases (no dynamic calls needed)  | TBD
+Audio           | Audio toggle (on/off) works correctly                         | TBD
+Gamification    | XP increments correctly for all 3 attempt types               | TBD
+Gamification    | Star rating correct (0, 1, 2, 3 stars) for all score ranges   | TBD
+Gamification    | All 8 badges unlock at correct conditions                     | TBD
+Gamification    | Streak counter resets to 0 on wrong answer                    | TBD
+Gamification    | Streak bonus (+5 XP) applies at streak ≥ 5                   | TBD
+Gamification    | World unlock gate (≥5/10 = 1 star required)                  | TBD
+Persistence     | localStorage saves session state correctly                    | TBD
+Persistence     | Session restores within 24 hours on page reload               | TBD
+Persistence     | Session cleared after 24 hours (new session starts)           | TBD
+Persistence     | "New Game" button clears storage and re-randomises            | TBD
+Responsive      | Layout correct on 768px tablet (primary device)              | TBD
+Responsive      | Layout correct on 375px mobile                               | TBD
+Responsive      | Layout correct on 1280px desktop                             | TBD
+Accessibility   | All tap targets ≥ 48×48px                                    | TBD
+Accessibility   | WCAG AA colour contrast on all text elements                  | TBD
+Accessibility   | Keyboard navigation functional throughout                     | TBD
+Accessibility   | iOS Safari audio unlocks on first user gesture                | TBD
+Performance     | Initial load < 2 seconds (Chrome DevTools, no cache)         | TBD
+Performance     | Animations run at 60fps (Chrome Performance tab)             | TBD
+Performance     | Bundle size gzipped < 650KB                                  | TBD
+Embedding       | App renders correctly in WordPress iframe                     | TBD
+Embedding       | API key not exposed in client bundle                          | TBD
+
+═══════════════════════════════════════════════════════════════
+
+17. DEPLOYMENT PIPELINE
+
+Step | Action
+-----|--------------------------------------------------------------
+1    | npm install (Vite + React 18 + Lucide React)
+2    | cp .env.example .env.local → add VITE_ELEVENLABS_API_KEY
+3    | node scripts/generate_audio.js → pre-generate all static .mp3
+4    | node scripts/clean_audio.js → remove any orphaned audio files
+5    | npm run dev → local preview at localhost:5173
+6    | Full QA pass against checklist (Section 16)
+7    | npm run build → Vite production bundle in dist/
+8    | Deploy dist/ to Vercel preview URL for staging QA
+9    | Staging QA: full checklist, iPad Safari, Desktop Chrome
+10   | Upload dist/ to CDN: cdn.intelliasg.com/lessons/wp-subtraction.js
+11   | Embed into WordPress via Option A or B (Section 15)
+12   | Final QA on intelliasg.com/.../lessons/simple-word-problems/
+13   | Set lesson status = Live in LearnPress LMS
+
+═══════════════════════════════════════════════════════════════
+
+18. ENVIRONMENT VARIABLES
+
+Variable                   | Used in               | Description
+---------------------------|-----------------------|--------------------------------
+VITE_ELEVENLABS_API_KEY    | src/utils/audio.js    | ElevenLabs API key for dynamic audio
+                           | scripts/generate_audio.js | Pre-generation offline script
+VITE_APP_VERSION           | App.jsx               | Version string for cache busting
+VITE_SESSION_TTL           | useLocalStorage.js    | Session timeout (default: 86400000)
+
+Never commit .env.local to version control. Use .env.example for documentation.
+
+═══════════════════════════════════════════════════════════════
+
+Document Version:    1.0 | May 2026
+Product:             Intellia SG — Grade 1 Math, Lesson 3.4
+Curriculum:          Singapore MOE Primary 1 Mathematics
+Reference UI:        https://numberbound.vercel.app/
+Reference Repo:      https://github.com/dsamyak/numberbound
+Technical Lead:      Intellia Engineering Team
+Audio Pipeline Ref:  audio_generation_pipeline.md (Word Problems Using Addition)
+Curriculum Ref:      Targeting Mathematics Primary 1A/1B (Casco Publications)
+                     Singapore MOE Primary 1 Mathematics Syllabus

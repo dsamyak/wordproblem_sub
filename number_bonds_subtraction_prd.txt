@@ -1,0 +1,379 @@
+Product Requirements Document (PRD)
+Number Bonds for Subtraction — Grade 1 Math
+Intellia SG | Singapore Primary Mathematics Curriculum (MOE)
+
+═══════════════════════════════════════════════════════════════
+
+1. EXECUTIVE SUMMARY
+
+This document defines product requirements for the "Number Bonds for Subtraction" interactive lesson module, delivered as Lesson 3.2 within Intellia SG's Grade 1 Math program. The module targets Singapore Primary 1 students aged 6–7 and teaches the use of number bond diagrams to understand and solve subtraction within 20, fully aligned with the Singapore MOE Mathematics Framework and the Primary 1 Targeting Mathematics (1A/1B) syllabus.
+
+The product is a standalone web page hosted at:
+https://intelliasg.com/courses/grade-1-math/lessons/number-bonds-for-subtraction/
+
+It is built using React (Vite + JSX, JavaScript/CSS) and designed to strictly mirror the visual and UX structure established at https://readingnumbers.vercel.app/ and the repository https://github.com/dsamyak/readingnumbers.
+
+The module follows Intellia's 5-phase learner journey:
+  Phase 1 — WONDER   → curiosity hook
+  Phase 2 — STORY    → narrative-based concept introduction
+  Phase 3 — SIMULATE → sandbox-style interactive simulation
+  Phase 4 — PLAY     → IntelliPlay™ gamified practice
+  Phase 5 — REFLECT  → journal / LearnFlow AI prompt
+
+═══════════════════════════════════════════════════════════════
+
+2. PRODUCT VISION & GOALS
+
+Vision
+To make number bond subtraction intuitive, visual, and memorable for 6–7 year old Singapore learners through animated simulations, part-whole scaffolding, and adaptive gamified challenge — all delivered in a consistent Intellia experience.
+
+Goals
+
+Goal                          | Metric
+------------------------------|-------------------------------------------
+Learning Completion           | ≥85% of students complete all 5 phases
+Practice Engagement           | ≥90% attempt at least 10 practice questions
+Score Achievement             | Average challenge score ≥75% first attempt
+Session Duration              | Average engagement ≥14 minutes per session
+Curriculum Alignment          | 100% aligned to Singapore MOE Primary 1 (3.2)
+Phase Progression             | ≥80% reach Play phase in a single session
+
+═══════════════════════════════════════════════════════════════
+
+3. TARGET USERS
+
+Primary: Grade 1 Students (Age 6–7)
+  - Limited reading; prefer visual diagrams, animation, colour
+  - Learn concretely first (C → P → A: Concrete-Pictorial-Abstract)
+  - Short attention spans; need frequent micro-rewards
+  - Singapore context: familiar with local names and school setting
+
+Secondary: Parents & Teachers
+  - Assign as classwork or homework
+  - Expect strict MOE curriculum alignment
+  - Monitor via completion indicators
+
+═══════════════════════════════════════════════════════════════
+
+4. CURRICULUM ALIGNMENT — Singapore MOE Primary 1
+
+Topic: Number Bonds for Subtraction (Lesson 3.2)
+Programme: Intellia SG Grade 1 Math — Section 3: Subtraction
+
+Source Textbooks Referenced:
+  - Targeting Mathematics Primary 1A (Casco Publications)
+    → Chapter 4: Subtraction Within 10
+       • Meaning of Subtraction (p.38–39)
+       • Subtraction Stories (p.40–48)
+       • Addition and Subtraction (p.49–52)
+       • Let's Think Along (p.53)
+  - Targeting Mathematics Primary 1B / Primary 3 (Casco Publications)
+    → Chapter 9: Subtraction Within 20
+       • Subtracting 1-digit Numbers from 2-digit Numbers (p.106–115)
+       • Word Problems (p.116–118)
+       • Let's Think Along (p.119)
+
+MOE Learning Objectives Covered:
+  LO1: Understand subtraction as "taking away" using number bonds (part-whole model)
+  LO2: Read and complete number bond diagrams for subtraction (whole – part = part)
+  LO3: Subtract within 10 using number bonds
+  LO4: Subtract within 20 using number bonds
+  LO5: Connect the number bond family: a + b = c, c – a = b, c – b = a
+  LO6: Solve simple word problems using the part-whole model
+
+Singapore Syllabus Concepts (CPA Progression):
+  Concrete   → physical counters / manipulatives (simulated digitally)
+  Pictorial  → number bond diagrams, bar model reference
+  Abstract   → number sentences: 9 – 4 = ___
+
+Number Ranges (phased):
+  Phase A: Subtraction within 10 (foundation)
+  Phase B: Subtraction within 20 (extension)
+
+═══════════════════════════════════════════════════════════════
+
+5. THE 5-PHASE LEARNER JOURNEY (Intellia Model)
+
+┌────────────────────────────────────────────────────────────┐
+│  INTRO SCREEN  →  Progress Map (5 steps visual tracker)    │
+└────────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 1 — WONDER  (≈ 1–2 min)                              │
+│  Hook: "If I have 9 cookies and eat 4... what's left? 🍪"   │
+│  Animated question, mystery animation, child "leans in"     │
+│  → Mascot appears, poses the mystery                        │
+└─────────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 2 — STORY  (≈ 2–3 min)                               │
+│  Narrative: Wei Ming has 8 stickers. He gives 3 to Priya.   │
+│  Visual story panels (illustrated, animated)                │
+│  Number bond diagram introduced visually                    │
+│  → Whole at top, two parts below, subtraction shown         │
+└─────────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 3 — SIMULATE  (≈ 4–5 min)                            │
+│  Sandbox: Interactive number bond builder                   │
+│  Station A: Drag counters to "take away" from whole         │
+│  Station B: Fill in missing part in number bond diagram     │
+│  Station C: Number sentence completion (abstract)           │
+│  → Hypothesis becomes felt knowledge                        │
+└─────────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 4 — PLAY  (≈ 5–6 min)                                │
+│  IntelliPlay™ Level: 100 randomised questions               │
+│  Shown in sets of 10 — "worlds" to unlock                   │
+│  Stars, XP, badges, streak fire counter                     │
+│  → Mastery is the cost of getting to the next world         │
+└─────────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 5 — REFLECT  (≈ 1–2 min)                             │
+│  Journal prompt: "Tell me one thing you learned today!"     │
+│  Or: LearnFlow AI chat (type/speak your understanding)      │
+│  → Lesson complete only here. Completion badge unlocked.    │
+└─────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════
+
+6. PHASE 3 — SIMULATION DESIGN (Detail)
+
+6.1 Station A — Counter Take-Away (Concrete)
+  Visual: A row of colourful circular counters (max 20)
+  Interaction:
+    - Drag counters into a "taken away" bin (animated disappear)
+    - OR tap counters to cross them out
+  Display: Number bond diagram updates in real-time
+    → Whole: [9]   Part taken: [4]   Part left: [?]
+  Teaching: Child discovers the "part left" by doing, not telling
+
+6.2 Station B — Number Bond Builder (Pictorial)
+  Visual: Animated number bond diagram (circle-branch-circle)
+  Interaction:
+    - Whole is shown at top
+    - One part is given
+    - Child drags the correct number into the empty part circle
+    - Counters animate to fill the circle
+  Variants:
+    - Find the missing part (whole – part = ?)
+    - Find the whole (? = part + part — reinforces addition link)
+  Number range: 0–10 in Station B, 0–20 in Station B+
+
+6.3 Station C — Number Sentence (Abstract)
+  Visual: Number sentence with one blank: [9] – [4] = [___]
+  Interaction:
+    - Number pad (large tap-friendly buttons 0–9/0–20)
+    - OR drag-and-drop number tiles
+  Scaffolding: Number bond diagram shown as hint if needed
+  Teaching Point: The abstract sentence is just the bond in a line
+
+═══════════════════════════════════════════════════════════════
+
+7. PHASE 4 — QUESTION BANK (100 Randomised Questions)
+
+7.1 Question Types (10 types × 10 questions = 100)
+
+Type | Description                          | Example
+-----|--------------------------------------|--------------------------------------------
+Q1   | Number bond diagram — find part      | [8] – [3] = [?]  (bond diagram shown)
+Q2   | Subtraction sentence — fill blank    | 7 – ___ = 4
+Q3   | Picture take-away — count remaining  | 9 stars, 5 crossed → How many left?
+Q4   | Word problem — Singapore context     | Mia has 12 sweets. Gives 5 to Jun. Left?
+Q5   | Fact family — find missing sentence  | 6+4=10, 4+6=10, 10–4=? → complete the family
+Q6   | True/False — is the bond correct?    | Is 8 – 3 = 4? True or False?
+Q7   | Part-whole — which number bond fits? | Show 4 number bonds → which matches 10–7=3?
+Q8   | Number before/after link             | ___ – 2 = 5 (what is the whole?)
+Q9   | Double subtraction                   | 15 – 6 = ___ (within 20)
+Q10  | Reverse: find the whole              | ___ – 4 = 6 (what is the whole?)
+
+7.2 Question Distribution
+
+Type  | Count | Difficulty Split (Easy / Med / Hard)
+------|-------|--------------------------------------
+Q1    |  10   | 5 / 3 / 2
+Q2    |  10   | 4 / 4 / 2
+Q3    |  10   | 5 / 3 / 2
+Q4    |  10   | 3 / 4 / 3
+Q5    |  10   | 4 / 3 / 3
+Q6    |  10   | 5 / 3 / 2
+Q7    |  10   | 4 / 4 / 2
+Q8    |  10   | 3 / 4 / 3
+Q9    |  10   | 3 / 4 / 3
+Q10   |  10   | 3 / 4 / 3
+TOTAL | 100   | 39 / 36 / 25
+
+7.3 Number Ranges
+  Easy:   Subtraction within 10
+  Medium: Subtraction within 15
+  Hard:   Subtraction within 20
+
+7.4 Singapore Context Names Used in Word Problems
+  Wei Ming, Priya, Raju, Ahmad, Mia, Jun, Siti, Ryan, Xiao Ling
+
+═══════════════════════════════════════════════════════════════
+
+8. GAMIFICATION DESIGN
+
+8.1 Reward System
+  Stars (⭐):   Earned per 10-question set (1–3 stars based on score)
+  XP Points:   10 XP correct first try | 7 XP second try | 5 XP with hint
+  Streak 🔥:  Fire counter for consecutive correct answers
+  Streak bonus: +5 XP per correct answer when streak ≥ 5
+
+8.2 Badges (Unlockable)
+  🏅 "Bond Beginner"    — Complete Wonder + Story phases
+  🥈 "Subtraction Star" — Complete Simulate phase (all 3 stations)
+  🥇 "Bond Master"      — Score 80%+ on Play phase (Challenge)
+  💎 "Perfect Bond"     — 100% on any 10-question world
+  🔥 "Streak Legend"    — Achieve a streak of 10+
+  🌟 "Full Journey"     — Complete all 5 phases (lesson complete)
+
+8.3 Feedback Mechanics
+  ✅ Correct:   Bounce animation + sound + "Amazing! You cracked the bond! 🎉"
+  ❌ Incorrect: Gentle shake + "Let's try again! Look at the number bond 🔢"
+  Hint 1:      Number bond diagram highlighted
+  Hint 2:      Counter animation shows take-away visually
+  After 2 fails: Answer revealed with animated explanation
+  No negative scoring — encouragement-first, always.
+
+8.4 World Map (IntelliPlay™ Level Progression)
+  World 1 — "Candy Land"    (Questions 1–10,  within 10, easy)
+  World 2 — "Jungle Trek"   (Questions 11–20, within 10, medium)
+  World 3 — "Ocean Deep"    (Questions 21–30, within 15, easy-med)
+  World 4 — "Sky Islands"   (Questions 31–40, within 15, medium)
+  World 5 — "Volcano Peak"  (Questions 41–50, within 15, hard)
+  World 6 — "Space Station" (Questions 51–60, within 20, easy)
+  World 7 — "Dragon Cave"   (Questions 61–70, within 20, medium)
+  World 8 — "Crystal Tower" (Questions 71–80, within 20, medium)
+  World 9 — "Rainbow Bridge"(Questions 81–90, within 20, hard)
+  World 10— "Number Palace"  (Questions 91–100, mixed, hard)
+
+  Each world unlocks only when ≥6/10 correct (1-star minimum)
+  3 stars required for bonus "hidden challenge" in each world
+
+8.5 Mascot (LearnFlow AI Companion)
+  Character: Friendly robot (matching Intellia branding — "LearnFlow")
+  Mood states: idle | curious | happy | thinking | celebrating
+  Appears in: Wonder hook, Story narration, Reflect phase
+  Reacts to: Correct answer, badge unlock, streak milestone
+
+═══════════════════════════════════════════════════════════════
+
+9. UX & VISUAL DESIGN REQUIREMENTS
+
+9.1 Visual Theme
+  Brand:       Intellia SG — Think. Explore. Become.
+  Colours:     Match readingnumbers.vercel.app exactly
+               - Primary blue: consistent with existing lesson
+               - Accent gold/yellow for rewards
+               - Soft coral for alerts/wrong answers
+               - White card backgrounds, soft shadows
+  Typography:  Rounded, playful — Nunito / Fredoka One
+  Illustrations: Cartoon-style, child-friendly, Singapore context
+  Phase cards:  Each of the 5 phases has a distinct colour band
+               (matching the Intellia learner journey infographic)
+
+9.2 Layout Structure (mirrors readingnumbers.vercel.app)
+  Top bar:    Intellia logo | Lesson title | Progress (5-dot tracker)
+  Main area:  Phase content (fills screen, responsive)
+  Bottom bar: XP counter | Stars | Streak | Phase navigation
+  Sidebar:    Hidden on mobile, shown on tablet+ (phase map)
+
+9.3 Accessibility
+  Large tap targets (min 44×44px)
+  WCAG AA colour contrast on all text
+  Audio narration via Web Speech API (en-SG)
+  Keyboard navigable
+  No mandatory time pressure (optional timer in challenge mode)
+
+9.4 Responsive Design
+  Primary: iPad / tablet (768px+)
+  Secondary: Desktop browser (1024px+)
+  Tertiary: Mobile (375px+) — stacked layout
+
+═══════════════════════════════════════════════════════════════
+
+10. CONTENT REQUIREMENTS
+
+10.1 Simulation Visuals
+  Number bond diagrams: SVG-rendered, animated fill/empty
+  Counters: Circular emoji-style items (stars, apples, cookies)
+  Part-whole model: Large, clear circles and connecting lines
+  Bar model reference: Simple visual introduction (not required to solve)
+
+10.2 Question Bank Coverage
+  All 10 question types × 10 questions = 100 unique questions
+  Questions randomised per session (Fisher-Yates shuffle)
+  No two sessions present the same question order
+  MCQ distractors are plausible (within ±3 of correct answer)
+
+10.3 Word Problems — Singapore MOE Style
+  Format: "Wei Ming had ___ [objects]. He gave/used/lost ___ [objects].
+           How many did he have left?"
+  Objects: cookies, stickers, marbles, balloons, books, fish, apples
+  Names:   Singapore-context (see §7.4)
+  Aligned to "Let's Think Along" style from Targeting Mathematics 1A
+
+10.4 Audio
+  Number narration (0–20) via Web Speech API
+  Question read-aloud for every question
+  Celebration sounds on correct/badge/streak
+  Background music (ambient, toggleable, off by default)
+
+═══════════════════════════════════════════════════════════════
+
+11. TECHNICAL PLATFORM SUMMARY
+
+Framework:   React 18 (Vite + JSX), single-page, single-file deployable
+Repo mirror: Structure matches https://github.com/dsamyak/readingnumbers
+Hosting:     Embedded in Intellia SG WordPress at the lesson URL
+             via iframe or React CDN bundle
+Browser:     Chrome, Safari, Edge (latest 2 major versions)
+Auth:        None required — guest learner access
+State:       localStorage (session resume within 24 hours)
+Analytics:   Question attempt tracking (future phase v2)
+
+═══════════════════════════════════════════════════════════════
+
+12. SUCCESS CRITERIA (v1.0)
+
+Criterion                                 | Target
+------------------------------------------|------------------
+All 100 questions randomised correctly    | ✅ Required
+All 3 simulation stations functional      | ✅ Required
+All 5 phases navigable end-to-end         | ✅ Required
+Gamification (XP, stars, badges) working  | ✅ Required
+World map progression logic correct       | ✅ Required
+Mobile/tablet responsive                  | ✅ Required
+Singapore MOE syllabus 100% covered       | ✅ Required
+Load time < 3 seconds                     | ✅ Required
+WCAG AA accessible                        | ✅ Required
+Matches readingnumbers.vercel.app UI/UX   | ✅ Required
+
+═══════════════════════════════════════════════════════════════
+
+13. OUT OF SCOPE (v1.0)
+
+  - Teacher dashboard / backend analytics
+  - Student login / account system
+  - Multiplayer or class competition features
+  - Parent progress emails
+  - Print worksheet generation
+  - Lesson 3.1, 3.3, 3.4 (separate modules)
+
+═══════════════════════════════════════════════════════════════
+
+Document Version: 1.0 | May 2026
+Product: Intellia SG — Grade 1 Math, Lesson 3.2
+Curriculum: Singapore MOE Primary 1 Mathematics
+Reference UI: https://readingnumbers.vercel.app/
+Reference Repo: https://github.com/dsamyak/readingnumbers
+Parent Page: https://intelliasg.com/courses/grade-1-math/

@@ -1,0 +1,610 @@
+Product Requirements Document (PRD)
+Word Problems Using Subtraction — Grade 1 Math
+Intellia SG | Singapore Primary Mathematics Curriculum (MOE)
+
+═══════════════════════════════════════════════════════════════
+
+1. EXECUTIVE SUMMARY
+
+This document defines product requirements for the "Word Problems Using Subtraction"
+interactive lesson module, delivered as Lesson 3.4 within Intellia SG's Grade 1 Math
+program. The module targets Singapore Primary 1 students aged 6–7 and teaches students
+to understand, model, and solve subtraction word problems within 20, fully aligned with
+the Singapore MOE Mathematics Framework and the Primary 1 Targeting Mathematics
+(1A/1B) syllabus.
+
+The product is a standalone web page hosted at:
+https://intelliasg.com/courses/grade-1-math/lessons/simple-word-problems/
+
+It is built using React (Vite + JSX, JavaScript/CSS) and designed to strictly mirror
+the visual and UX structure established at https://numberbound.vercel.app/ and the
+repository https://github.com/dsamyak/numberbound.
+
+Audio narration is delivered exclusively via ElevenLabs (Voice: Alice, Voice ID:
+Xb7hH8MSUJpSbSDYk0k2, Model: eleven_multilingual_v2) using a pre-generation + dynamic
+fallback pipeline identical to the existing numberbound module. No browser Web Speech
+API fallback is used. See Section 13 for full Audio Pipeline specification.
+
+The module follows Intellia's 5-phase learner journey:
+
+  Phase 1 — INTRO    → Lesson welcome & phase map overview
+  Phase 2 — WONDER   → Curiosity hook, mystery problem
+  Phase 3 — STORY    → Narrative-based concept introduction with Singapore characters
+  Phase 4 — SIMULATE → Sandbox-style interactive simulation (3 stations)
+  Phase 5 — PLAY     → IntelliPlay™ gamified practice (100 randomised questions)
+  Phase 6 — REFLECT  → Journal / LearnFlow AI reflection prompt
+
+═══════════════════════════════════════════════════════════════
+
+2. PRODUCT VISION & GOALS
+
+Vision
+
+To make subtraction word problems intuitive, visual, and memorable for 6–7 year old
+Singapore learners by teaching them to read a real-world story, identify the "whole"
+and "parts", draw a number bond or bar model, and write the subtraction sentence —
+all delivered through animated simulations, Singapore-context narratives, and adaptive
+gamified challenge within a consistent Intellia experience.
+
+Goals
+
+Goal                              | Metric
+----------------------------------|----------------------------------------------
+Learning Completion               | ≥85% of students complete all phases
+Practice Engagement               | ≥90% attempt at least 10 practice questions
+Score Achievement                 | Average challenge score ≥75% first attempt
+Session Duration                  | Average engagement ≥16 minutes per session
+Curriculum Alignment              | 100% aligned to Singapore MOE Primary 1 (3.4)
+Phase Progression                 | ≥80% reach Play phase in a single session
+Audio Narration Completion Rate   | ≥90% of students hear all phase narrations
+
+═══════════════════════════════════════════════════════════════
+
+3. TARGET USERS
+
+Primary: Grade 1 Students (Age 6–7)
+
+- Emerging readers; word problems require audio narration support
+- Need visual scaffolding (number bonds, bar models, counters)
+- Learn via CPA: Concrete → Pictorial → Abstract progression
+- Short attention spans; frequent micro-rewards essential
+- Singapore context: familiar with local names, hawker food, school items
+
+Secondary: Parents & Teachers
+
+- Assign as classwork, homework, or remediation
+- Expect strict MOE curriculum alignment
+- Monitor via phase completion indicators
+- Teachers may preview lesson before assigning
+
+═══════════════════════════════════════════════════════════════
+
+4. CURRICULUM ALIGNMENT — Singapore MOE Primary 1
+
+Topic: Word Problems Using Subtraction (Lesson 3.4)
+Programme: Intellia SG Grade 1 Math — Section 3: Subtraction
+Lesson Position in Section 3:
+  3.1 Subtraction within 20 and 100
+  3.2 Number Bonds for Subtraction
+  3.3 Fact Families
+  3.4 Simple Word Problems  ← THIS MODULE
+
+Source Textbooks Referenced:
+  - Targeting Mathematics Primary 1A (Casco Publications)
+    → Chapter 4: Subtraction Within 10
+      • Word Problem Stories (p.40–48: "Subtraction Stories")
+      • Let's Think Along problems (p.53)
+  - Targeting Mathematics Primary 1B (Casco Publications)
+    → Chapter 9: Subtraction Within 20
+      • Word Problems (p.116–118)
+      • Let's Think Along (p.119)
+  - Singapore MOE Primary Mathematics 1B (Marshall Cavendish)
+    → Chapter 10: Subtraction — Word problems with part-whole model
+
+MOE Learning Objectives Covered:
+
+LO1: Read a word problem and identify "what is given" and "what we need to find"
+LO2: Represent a word problem using a number bond (part-whole model)
+LO3: Represent a word problem using a simple bar model
+LO4: Write a subtraction sentence from a word problem
+LO5: Solve subtraction word problems within 10 (foundation)
+LO6: Solve subtraction word problems within 20 (extension)
+LO7: Identify whether to add or subtract from a word problem context
+LO8: Check the answer using the related number bond family
+
+Singapore MOE Mathematical Process Skills Covered:
+- Problem solving through model drawing
+- Reasoning and communication (explaining the number bond)
+- Connections (linking word story → diagram → number sentence)
+
+CPA (Concrete-Pictorial-Abstract) Progression:
+  Concrete   → Animated emoji counters; draggable manipulatives
+  Pictorial  → Number bond diagrams; bar model visuals
+  Abstract   → Subtraction sentences with blanks to fill
+
+Number Ranges (phased):
+  Phase A: Word problems within 10 (foundation)
+  Phase B: Word problems within 20 (extension)
+
+═══════════════════════════════════════════════════════════════
+
+5. THE 5-PHASE LEARNER JOURNEY (Intellia Model)
+
+┌────────────────────────────────────────────────────────────────┐
+│  INTRO SCREEN → Welcome + Mascot greeting + Phase Map (5 dots)  │
+└────────────────────────────────────────────────────────────────┘
+                             │
+                             ▼
+┌────────────────────────────────────────────────────────────────┐
+│  PHASE 1 — WONDER  (≈ 1–2 min)                                 │
+│                                                                  │
+│  Hook: "Siti has 10 balloons at her party. 🎈                   │
+│         Some flew away! Now she has 6.                          │
+│         How many flew away?"                                     │
+│                                                                  │
+│  Visual: Animated balloons floating up and disappearing         │
+│  Mascot: Appears with question-mark expression, "curious" mood  │
+│  Narration: ElevenLabs Alice voice reads the mystery aloud      │
+│  Interaction: Tap to "pop" the mystery, reveal the question     │
+│  → Ends with: "Let's learn how to solve it together! 🚀"        │
+└────────────────────────────────────────────────────────────────┘
+                             │
+                             ▼
+┌────────────────────────────────────────────────────────────────┐
+│  PHASE 2 — STORY  (≈ 3–4 min)                                  │
+│                                                                  │
+│  Narrative: Wei Ming has 9 fishballs 🍢 at the hawker centre.   │
+│             He eats 4. How many are left?                        │
+│                                                                  │
+│  Panel 1: Illustration of Wei Ming at a hawker stall, 9 fishballs
+│  Panel 2: Wei Ming eats 4 — animated disappear with "crunch!"  │
+│  Panel 3: "How many are left?" — question posed                 │
+│  Panel 4: Number bond introduced: Whole [9], Part [4], Part [?]│
+│  Panel 5: "The whole is 9. One part is 4. We need to find       │
+│            the other part. 9 – 4 = 5."                          │
+│  Panel 6: Bar model shown alongside number bond                  │
+│  Panel 7: Full sentence written: "Wei Ming has 5 fishballs left."│
+│                                                                  │
+│  Concept teaching includes:                                      │
+│  • "What do we know?" → Identify whole and given part            │
+│  • "What do we need to find?" → The missing part                 │
+│  • "Draw the number bond" → Visual model building                │
+│  • "Write the number sentence" → Abstract representation        │
+│  • "Write the answer sentence" → Full problem answer             │
+│                                                                  │
+│  All text narrated by ElevenLabs Alice with matching style tags │
+└────────────────────────────────────────────────────────────────┘
+                             │
+                             ▼
+┌────────────────────────────────────────────────────────────────┐
+│  PHASE 3 — SIMULATE  (≈ 4–5 min)                               │
+│                                                                  │
+│  Three interactive stations that scaffold the word problem       │
+│  solving process from concrete to abstract.                      │
+│                                                                  │
+│  Station A — "Read & Show" (Concrete)                           │
+│    Read a word problem → Count out emoji counters               │
+│    Take away the given number → Count what's left               │
+│                                                                  │
+│  Station B — "Draw the Bond" (Pictorial)                        │
+│    Word problem displayed → Draw/fill number bond diagram       │
+│    Drag numbers into the correct bond circles                    │
+│    Bar model updates automatically                               │
+│                                                                  │
+│  Station C — "Write the Sentence" (Abstract)                    │
+│    Number bond shown → Write the subtraction sentence           │
+│    Fill in: [ ___ ] – [ ___ ] = [ ___ ]                        │
+│    Then write the answer sentence in the story                   │
+│                                                                  │
+│  Mascot narrates each station using ElevenLabs Alice            │
+└────────────────────────────────────────────────────────────────┘
+                             │
+                             ▼
+┌────────────────────────────────────────────────────────────────┐
+│  PHASE 4 — PLAY  (≈ 6–8 min)                                   │
+│                                                                  │
+│  IntelliPlay™ Challenge: 100 randomised questions               │
+│  Presented in sets of 10 — "worlds" to unlock progressively     │
+│  Stars, XP, badges, streak fire counter                         │
+│  Questions range across 10 distinct types (see Section 7)       │
+│  Audio narration for every question (ElevenLabs Alice)          │
+│  Hint system: 2 levels before answer reveal                     │
+└────────────────────────────────────────────────────────────────┘
+                             │
+                             ▼
+┌────────────────────────────────────────────────────────────────┐
+│  PHASE 5 — REFLECT  (≈ 1–2 min)                                │
+│                                                                  │
+│  Journal prompt: "Tell me one thing you learned today!"         │
+│  Or: "Can you make up your own subtraction word problem?"       │
+│  LearnFlow AI chat widget (typed response)                      │
+│  Lesson complete badge unlocked here                             │
+│  Narration: "Wonderful! You are a Word Problem Champion! 🏆"    │
+└────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════
+
+6. PHASE 3 — SIMULATION DESIGN (Detail)
+
+6.1 Station A — "Read & Show" (Concrete)
+
+Context: A word problem is displayed with full narration (ElevenLabs)
+Visual:  Large colourful emoji counters in a grid (max 20)
+         Singapore-themed emojis: 🍱 🍢 🎈 🏷️ 📚 🐟 🍎 🌟
+
+Interaction:
+  Step 1 — Mascot reads problem aloud (ElevenLabs narration)
+  Step 2 — "Show all [X] items" — student places counters on board
+  Step 3 — "Take away [Y]" — student taps to remove counters
+           (removed counters animate a "fly away" disappear effect)
+  Step 4 — "How many are left?" — student counts remaining
+  Step 5 — Number bond diagram fills automatically showing result
+
+Teaching: Child experiences subtraction kinaesthetically before abstracting
+
+Validation:
+  - Must correctly remove the right number before advancing
+  - Incorrect: Gentle shake + "Try again! How many should fly away?"
+  - After 3 fails: Mascot helps by auto-animating the removal
+
+6.2 Station B — "Draw the Bond" (Pictorial)
+
+Context: Word problem shown + partially completed number bond
+Visual:  Interactive number bond SVG with draggable number tiles
+
+Interaction:
+  - Three number tiles shown at bottom: whole, part1, part2 (shuffled)
+  - Student drags each number into the correct circle in the bond:
+      Top circle = Whole (minuend)
+      Bottom-left = Given part (subtrahend)
+      Bottom-right = Missing part (difference)
+  - Each correct placement: bounce animation + tick sound
+  - Bar model visual updates automatically alongside the bond
+
+Variants:
+  - Variant A: All three numbers shuffled, student places all
+  - Variant B: Whole and one part given, student places the third
+  - Variant C: Two parts given, student finds and places the whole
+
+6.3 Station C — "Write the Sentence" (Abstract)
+
+Context: Completed number bond shown + word problem above
+Visual:  Three blank boxes: [ ___ ] – [ ___ ] = [ ___ ]
+
+Interaction:
+  - Tap each blank → NumberPad opens
+  - Student fills whole → part1 → part2
+  - On completion: animated number sentence appears in full
+  - "Answer sentence" field: student selects the correct completion
+    e.g. "Wei Ming has [___] fishballs left." → tap correct number
+
+Hint Button: "Show me the number bond" → bond diagram highlights
+
+═══════════════════════════════════════════════════════════════
+
+7. PHASE 4 — QUESTION BANK (100 Randomised Questions)
+
+7.1 Question Types (10 types × 10 questions = 100)
+
+Type | Description                                    | Example
+-----|------------------------------------------------|-------------------------------------------
+Q1   | Read word problem → select correct answer       | "Priya had 9 sweets. She ate 3. How many left?" [MCQ]
+Q2   | Word problem → complete number bond             | Story given → drag numbers into bond diagram
+Q3   | Word problem → write subtraction sentence       | Bond shown → fill [ __ ] – [ __ ] = [ __ ]
+Q4   | Word problem → write full answer sentence       | "Wei Ming has ___ books left." → tap correct number
+Q5   | Picture word problem → count and subtract       | 8 apples shown, 5 crossed → How many left?
+Q6   | Reverse: find the whole from the problem        | "Raju ate 4 biscuits. He has 5 left. How many did he start with?"
+Q7   | Two-step identification: add or subtract?       | "Jun got MORE. Should we + or – ?" [MCQ]
+Q8   | Match problem to number bond                    | 4 bond diagrams shown → which matches the story?
+Q9   | True or False: is the sentence correct?         | "10 – 4 = 5. True or False?"
+Q10  | Write the problem's answer sentence             | Drag correct word tiles to complete: "Siti has ___ balloons left."
+
+7.2 Question Distribution
+
+Type | Count | Difficulty Split (Easy / Medium / Hard)
+-----|-------|----------------------------------------
+Q1   |  10   | 4 / 4 / 2  (within 10 / 15 / 20)
+Q2   |  10   | 4 / 3 / 3
+Q3   |  10   | 4 / 4 / 2
+Q4   |  10   | 3 / 4 / 3
+Q5   |  10   | 5 / 3 / 2
+Q6   |  10   | 3 / 4 / 3
+Q7   |  10   | 5 / 3 / 2
+Q8   |  10   | 4 / 4 / 2
+Q9   |  10   | 4 / 4 / 2
+Q10  |  10   | 3 / 4 / 3
+TOTAL| 100   | 39 / 37 / 24
+
+7.3 Number Ranges
+
+Easy:   Subtraction within 10 (minuend ≤ 10)
+Medium: Subtraction within 15 (minuend ≤ 15)
+Hard:   Subtraction within 20 (minuend ≤ 20)
+
+7.4 Singapore Context Names & Objects
+
+Names:    Wei Ming, Priya, Raju, Ahmad, Siti, Jun, Xiao Ling, Ryan, Mei, Arjun
+Objects:  fishballs, stickers, balloons, marbles, biscuits, sweets, apples,
+          books, erasers, stars, fish, flowers, pencils, shells, buttons
+
+7.5 Singapore MOE Word Problem Format
+
+Standard format (as per Targeting Mathematics 1A/1B):
+  "[Character] had/has [whole] [objects].
+   [He/She] [action verb — gave/ate/lost/used/broke] [part1] [objects].
+   How many [objects] did [he/she] have left?"
+
+Extended format (harder questions, within 20):
+  "[Character A] and [Character B] had [whole] [objects] altogether.
+   [Character A] had [part1]. How many did [Character B] have?"
+
+7.6 World Map — 10 Worlds
+
+World 1  — "Hawker Centre"   (Q 1–10,   within 10, easy, food theme)
+World 2  — "Playground"      (Q 11–20,  within 10, medium, toys/games)
+World 3  — "School Library"  (Q 21–30,  within 12, easy-medium, books)
+World 4  — "Night Safari"    (Q 31–40,  within 15, medium, animals)
+World 5  — "Gardens by Bay"  (Q 41–50,  within 15, medium-hard, flowers)
+World 6  — "MRT Adventure"   (Q 51–60,  within 18, easy, transport)
+World 7  — "Sentosa Beach"   (Q 61–70,  within 18, medium, ocean items)
+World 8  — "Sports Day"      (Q 71–80,  within 20, medium, sport objects)
+World 9  — "Birthday Party"  (Q 81–90,  within 20, hard, party items)
+World 10 — "Math Champions"  (Q 91–100, mixed, hard, all contexts)
+
+Each world unlocks when ≥ 6/10 correct (1-star minimum achieved).
+3 stars (≥ 9/10) unlocks a "bonus hidden challenge" in that world.
+
+═══════════════════════════════════════════════════════════════
+
+8. GAMIFICATION DESIGN
+
+8.1 Reward System
+
+Stars (⭐):    Earned per 10-question world (1–3 stars based on score)
+              ⭐⭐⭐ = 9–10 correct | ⭐⭐ = 7–8 | ⭐ = 5–6 | 0 = < 5
+XP Points:    10 XP correct first try
+               7 XP correct second try
+               5 XP correct with hint used
+Streak 🔥:    Fire counter for consecutive correct answers
+Streak Bonus: +5 XP per correct answer when streak ≥ 5
+
+8.2 Badges (Unlockable)
+
+🏅 "Problem Spotter"    — Complete Wonder + Story phases
+🥈 "Model Builder"      — Complete Simulate phase (all 3 stations)
+🥇 "Word Problem Whiz"  — Score 80%+ on Play phase
+💎 "Perfect Story"      — Score 10/10 in any world
+🔥 "Streak Legend"      — Achieve a streak of 10+ consecutive correct
+🌟 "Full Champion"      — Complete all 5 phases (lesson complete)
+🦁 "Singapore Solver"   — Complete all 10 Singapore-context worlds
+📚 "Bond & Story Link"  — Use the number bond hint 0 times in a world
+
+8.3 Feedback Mechanics
+
+✅ Correct:   Bounce animation + celebration sound + ElevenLabs praise:
+               "Amazing! You solved the word problem! 🎉"
+               "Brilliant! You used the number bond perfectly! ⭐"
+               "You're a maths superstar! Keep going! 🌟"
+
+❌ Incorrect:  Gentle shake + ElevenLabs encouragement:
+               "Let's try again! Read the problem carefully. 🔢"
+               "Almost there! Think about what we need to find. 🤔"
+
+Hint Level 1: Number bond diagram highlighted with labels
+              ElevenLabs: "Look at the number bond. What is the whole?"
+
+Hint Level 2: Counter animation shows take-away step by step
+              ElevenLabs: "Count the [objects]. Take away [Y]. Count what's left."
+
+After 2 fails: Answer revealed with animated explanation panel
+               ElevenLabs narrates full solution step by step
+
+No negative scoring. Encouragement-first approach always applied.
+
+8.4 Mascot (LearnFlow AI Companion)
+
+Character:  LearnFlow — Friendly Intellia robot (matching brand identity)
+Mood States: idle | curious | happy | thinking | celebrating | helping
+Appears in: Wonder hook, all Story panels, Simulate stations, Reflect phase
+Reacts to:  Correct answer, wrong answer, badge unlock, streak milestone
+Narrated:   All mascot speech delivered via ElevenLabs Alice voice
+
+8.5 Progress Indicators
+
+Top bar:      5-dot phase tracker (coloured dots, current phase highlighted)
+Bottom bar:   XP counter | Stars total | Streak fire | Phase nav arrows
+World map:    Horizontal scrollable map; locked worlds shown as silhouettes
+
+═══════════════════════════════════════════════════════════════
+
+9. UX & VISUAL DESIGN REQUIREMENTS
+
+9.1 Visual Theme
+
+Brand:          Intellia SG — Think. Explore. Become.
+Reference UI:   https://numberbound.vercel.app/ (STRICT match required)
+Reference Repo: https://github.com/dsamyak/numberbound
+
+Colour Palette (exact match to numberbound):
+  Primary Blue:   #4A90D9 (buttons, active states, bond "whole" circle)
+  Accent Orange:  #FF8A50 (bond "part" circles, streak counter)
+  Reward Gold:    #FFD700 (stars, XP bar, badge glow)
+  Success Green:  #4CAF50 (correct feedback, tick icons)
+  Alert Coral:    #FF6B6B (wrong feedback, shake animation)
+  Background:     #F5F7FA (soft off-white)
+  Card White:     #FFFFFF with box-shadow: 0 4px 12px rgba(0,0,0,0.08)
+
+Typography:
+  Headings:     Fredoka One (rounded, child-friendly)
+  Body / UI:    Nunito (clean, readable for young learners)
+  Number display: Fredoka One Bold, min 32px
+
+Illustrations:
+  Style:     Cartoon-style, flat design, Singapore hawker/MRT/school context
+  Characters: Wei Ming, Priya, Raju, Ahmad, Siti — diverse representation
+  Mascot:    Intellia LearnFlow robot — consistent with existing modules
+  Objects:   Emoji-style SVG counters with Singapore context
+
+9.2 Layout Structure (STRICT mirror of numberbound.vercel.app)
+
+  Top bar:    Intellia logo | "Word Problems: Subtraction" | Phase dots (5)
+  Main area:  Phase content — full-bleed card, responsive
+  Bottom bar: XP counter | Stars | Streak fire counter | Phase navigation
+  Sidebar:    Hidden on mobile; visible on tablet+ as phase map
+
+Phase Card Colour Bands (matching Intellia learner journey system):
+  Wonder:   Warm yellow / gold (#FFF9C4 background band)
+  Story:    Soft blue (#E3F2FD background band)
+  Simulate: Soft green (#E8F5E9 background band)
+  Play:     Rich purple (#F3E5F5 background band)
+  Reflect:  Warm peach (#FFF3E0 background band)
+
+9.3 Accessibility
+
+  Tap targets:    Minimum 44 × 44px for all interactive elements
+  Colour contrast: WCAG AA on all text and UI elements
+  Audio:          All text narrated via ElevenLabs (see Section 13)
+  Audio toggle:   Accessible on/off button in top bar
+  Keyboard:       Fully keyboard-navigable (Tab, Enter, Space, Arrow keys)
+  Time pressure:  No mandatory timers; optional timer in challenge mode only
+  Font size:      Minimum 16px body text; number display minimum 32px
+
+9.4 Responsive Design
+
+  Primary:    iPad / Tablet (768px+) — classroom target device
+  Secondary:  Desktop browser (1024px+)
+  Tertiary:   Mobile (375px+) — stacked single-column layout
+  Breakpoints: match numberbound.vercel.app breakpoints exactly
+
+═══════════════════════════════════════════════════════════════
+
+10. CONTENT REQUIREMENTS
+
+10.1 Simulation Visuals
+
+  Number bond diagrams:  SVG-rendered, animated fill, dashed empty circles
+  Bar model visuals:     Horizontal coloured bars (whole vs parts)
+  Counters:             Circular emoji SVGs — 🍢 🎈 🏷️ 📚 🐟 🍎 🌟 🍪
+  Story panels:         Illustrated scene cards (CSS/SVG, no raster images)
+  Number sentence:      Large tile-style boxes for each number/operator
+
+10.2 Question Bank Coverage
+
+  All 10 question types × 10 questions = 100 unique questions
+  Questions randomised per session (Fisher-Yates shuffle — see TRD)
+  No two sessions present the same question order
+  MCQ distractors are plausible (within ±3 of correct answer)
+  Word problems use Singapore names and objects exclusively
+
+10.3 Story Phase Panels
+
+  7 panels total — each narrated by ElevenLabs Alice
+  Panel 1: Story setup (character + objects introduced)
+  Panel 2: Action (taking away / giving / eating / losing)
+  Panel 3: Question posed ("How many are left?")
+  Panel 4: "What do we know?" — whole and part labelled
+  Panel 5: Number bond drawn step by step (animated)
+  Panel 6: Subtraction sentence written (animated)
+  Panel 7: Answer sentence written (animated conclusion)
+
+10.4 Narration Script Coverage
+
+  All phase narrations pre-generated offline via ElevenLabs Alice
+  (Voice ID: Xb7hH8MSUJpSbSDYk0k2, Model: eleven_multilingual_v2)
+  Pre-generated: Intro, Wonder hook, all 7 Story panels, Simulate
+                 station instructions, Reflect prompts, all UI messages
+  Dynamically generated: All 100 question texts, number narrations,
+                         praise messages, hint texts
+  Speech styles used:
+    statement     → Story panels, instructions
+    question      → Wonder hook, problem questions
+    encouragement → Correct answer feedback
+    thinking      → Hint delivery, "let's try again"
+    celebration   → Badge unlock, streak milestone, phase complete
+    emphasis      → Key teaching terms ("the WHOLE", "the PART")
+
+═══════════════════════════════════════════════════════════════
+
+11. AUDIO NARRATION PIPELINE OVERVIEW
+    (Full technical spec in TRD Section 12)
+
+Audio Provider:   ElevenLabs exclusively (no Web Speech API fallback)
+Voice:            Alice — Clear, Engaging Educator
+Voice ID:         Xb7hH8MSUJpSbSDYk0k2
+Model:            eleven_multilingual_v2
+API Key:          VITE_ELEVENLABS_API_KEY (environment variable)
+
+Pre-Generation:   All known static scripts pre-generated offline
+                  using scripts/generate_audio.js
+                  Stored as .mp3 files in public/assets/audio/
+                  Audio map at src/utils/audioMap.js
+
+Dynamic:          Questions, numbers, praise generated on-the-fly
+                  if not in audioMap and API key is present
+                  In-memory cache (elevenLabsCache) prevents duplicate calls
+
+Seamless Playback: Frontend eagerly preloads segment i+1 while playing i
+                   Uses HTML5 Audio API (new Audio())
+                   No gaps between narration sentences
+
+No Fallback:      If file missing and no API key → silent skip
+                  Never falls back to browser Web Speech API
+
+═══════════════════════════════════════════════════════════════
+
+12. TECHNICAL PLATFORM SUMMARY
+
+Framework:    React 18 (Vite + JSX), single-page application
+Repo Mirror:  Structure mirrors https://github.com/dsamyak/numberbound exactly
+Hosting:      Embedded in Intellia SG WordPress at the lesson URL
+              via iframe or React CDN bundle (see TRD Section 15)
+Browser:      Chrome, Safari, Edge, Firefox (latest 2 major versions)
+Auth:         None required — guest learner access (no login)
+State:        localStorage (session resume within 24 hours)
+Audio:        ElevenLabs API (primary) — see Section 11 and TRD Section 12
+Analytics:    Question attempt tracking (planned for v2)
+
+═══════════════════════════════════════════════════════════════
+
+13. SUCCESS CRITERIA (v1.0)
+
+Criterion                                          | Target
+---------------------------------------------------|------------------
+All 100 questions randomised correctly             | ✅ Required
+All 3 simulation stations functional               | ✅ Required
+All 5 phases navigable end-to-end                  | ✅ Required
+Gamification (XP, stars, badges) working           | ✅ Required
+World map progression logic correct                | ✅ Required
+Mobile / tablet responsive                         | ✅ Required
+Singapore MOE syllabus 100% covered                | ✅ Required
+Load time < 3 seconds                              | ✅ Required
+WCAG AA accessible                                 | ✅ Required
+Matches numberbound.vercel.app UI/UX exactly       | ✅ Required
+ElevenLabs narration plays on all phases           | ✅ Required
+Seamless audio playback (no gaps)                  | ✅ Required
+Silent skip if no API key (no crash)               | ✅ Required
+audioMap.js covers all static scripts              | ✅ Required
+
+═══════════════════════════════════════════════════════════════
+
+14. OUT OF SCOPE (v1.0)
+
+- Teacher dashboard / backend analytics
+- Student login / account system
+- Multiplayer or class competition features
+- Parent progress email summaries
+- Print worksheet generation
+- Two-step word problems (Lesson 4.x+)
+- Multiplication / division word problems
+- Lessons 3.1, 3.2, 3.3 (separate modules)
+
+═══════════════════════════════════════════════════════════════
+
+Document Version:    1.0 | May 2026
+Product:             Intellia SG — Grade 1 Math, Lesson 3.4
+Curriculum:          Singapore MOE Primary 1 Mathematics
+Reference UI:        https://numberbound.vercel.app/
+Reference Repo:      https://github.com/dsamyak/numberbound
+Parent Course Page:  https://intelliasg.com/courses/grade-1-math/
+Lesson URL:          https://intelliasg.com/courses/grade-1-math/lessons/simple-word-problems/
+Audio Pipeline Ref:  audio_generation_pipeline.md (Word Problems Using Addition module)
